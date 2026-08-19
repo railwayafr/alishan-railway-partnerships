@@ -743,6 +743,7 @@
     .access-note { margin-top:10px; font-size:.84rem; color:var(--muted); line-height:1.55; }
 
 </style>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
   <div class="app">
@@ -1045,8 +1046,8 @@
           <div class="panel">
             <h3>正式版建議</h3>
             <div class="hint-box">
-              <strong>GitHub Prototype：</strong><br>名單先儲存在目前瀏覽器的 localStorage，並以「登入示意」呈現白名單概念。<br><br>
-              <strong>正式共編版：</strong><br>將名單改讀 Google Sheet 的 <code>Editors</code> 工作表。管理者只要在 Sheet 新增姓名或切換「是否啟用」，所有同事的下拉選單就會同步更新，不必改 HTML，也不需要登入系統。
+              <strong>GitHub Prototype：</strong><br>目前已改為 Google Sheet 的 Editors 工作表作為 Email 白名單來源。<br><br>
+              <strong>正式共編版：</strong><br>管理者直接在 Google Sheet 的 <code>Editors</code> 工作表新增姓名、Email 或切換 active。網站登入後會由後端驗證 Email，不由前端自行信任使用者輸入。
             </div>
             <div class="hint-box" style="margin-top:14px;">
               <strong>建議欄位：</strong><br>姓名｜Email｜是否啟用｜備註<br><br>舊同事建議改成「停用」，不要刪除，以免歷史紀錄失去編輯來源。
@@ -1060,10 +1061,21 @@
   <div class="toast" id="toast"></div>
 
   <script>
-    // === 權限 Prototype ===
-    // 正式版會由 Google Identity Services 取得 ID token，送 Apps Script 後端驗證，
-    // 再用 Editors 工作表中的 Email 白名單判斷是否能編輯。
+    // === Live API / Google Identity 設定 ===
+    const API_URL = 'https://script.google.com/macros/s/AKfycbzJwDP8CLiIvNVL6LbTvCOER9Y29yhufHv88h7KA3hybzg59SB-bB_gUF184BwU8cdC/exec';
+    // 下一步在 Google Cloud 建立「Web application」OAuth Client ID 後，將 Client ID 貼在這裡。
+    // 例：1234567890-xxxxxxxx.apps.googleusercontent.com
+    const GOOGLE_CLIENT_ID = '';
+
     let isAuthorizedEditor = false;
+    let googleIdToken = '';
+    let currentUser = null;
+    let editors = [];
+    let railwayData = [];
+    let records = [];
+    let cooperationDocuments = [];
+
+    const COUNTRY_FLAGS = { '日本':'🇯🇵','印度':'🇮🇳','瑞士':'🇨🇭','英國':'🇬🇧','斯洛伐克':'🇸🇰','澳洲':'🇦🇺','臺灣':'🇹🇼' };
 
     function setEditMode(authorized, label) {
       isAuthorizedEditor = authorized;
@@ -1074,75 +1086,131 @@
         status.classList.toggle('authorized', authorized);
       }
       const loginBtn = document.getElementById('googleLoginBtn');
-      if (loginBtn) loginBtn.textContent = authorized ? '登出編輯模式' : '使用 Google 帳號登入';
-    }
-
-    const DEFAULT_EDITORS = [
-      { name: 'Ida', email: 'ida@example.com', active: true },
-      { name: '同事 A', email: 'colleague-a@example.com', active: true },
-      { name: '同事 B', email: 'colleague-b@example.com', active: true }
-    ];
-
-    function loadEditors() {
-      try {
-        const saved = JSON.parse(localStorage.getItem('afr-editors-v1'));
-        return Array.isArray(saved) && saved.length ? saved : DEFAULT_EDITORS.map(x => ({...x}));
-      } catch (e) {
-        return DEFAULT_EDITORS.map(x => ({...x}));
+      if (loginBtn) {
+        if (!GOOGLE_CLIENT_ID) loginBtn.textContent = 'Google 登入待設定';
+        else loginBtn.textContent = authorized ? '登出編輯模式' : '使用 Google 帳號登入';
       }
     }
 
-    let editors = loadEditors();
-
-    function saveEditors() {
-      localStorage.setItem('afr-editors-v1', JSON.stringify(editors));
+    function mapRailway(r) {
+      const rawDate = String(r.agreement_date || '').slice(0,10);
+      return {
+        id: r.railway_id,
+        name: r.name_zh,
+        english: r.name_en,
+        country: r.country,
+        flag: COUNTRY_FLAGS[r.country] || '🚂',
+        type: r.category,
+        start: rawDate ? rawDate.replaceAll('-','/') : '無',
+        keywords: String(r.keywords || '').split(',').map(x=>x.trim()).filter(Boolean),
+        website: r.website || ''
+      };
     }
 
-    const railwayData = [
-      { id:'oigawa', name:'大井川鐵道', english:'Ōigawa Railway', country:'日本', flag:'🇯🇵', type:'姊妹鐵路', start:'1986/01/25', keywords:['40週年','實地考察','節慶問候'] },
-      { id:'kurobe', name:'黑部峽谷鐵道', english:'Kurobe Gorge Railway', country:'日本', flag:'🇯🇵', type:'姊妹鐵路', start:'2013/04/20', keywords:['觀光列車','社群媒體','實地考察'] },
-      { id:'dhr', name:'大吉嶺喜馬拉雅鐵道', english:'Darjeeling Himalayan Railway', country:'印度', flag:'🇮🇳', type:'姊妹鐵路', start:'2016/12/24', keywords:['蒸汽機車','青年實習','世界遺產'] },
-      { id:'ksr', name:'寇卡西姆拉鐵道', english:'Kalka Shimla Railway', country:'印度', flag:'🇮🇳', type:'姊妹鐵路', start:'2016/12/24', keywords:['印度山地鐵路','世界遺產'] },
-      { id:'nmr', name:'尼吉里登山鐵道', english:'Nilgiri Mountain Railway', country:'印度', flag:'🇮🇳', type:'姊妹鐵路', start:'2016/12/24', keywords:['印度山地鐵路','世界遺產'] },
-      { id:'mgb', name:'馬特洪哥塔鐵道', english:'Matterhorn Gotthard Bahn', country:'瑞士', flag:'🇨🇭', type:'姊妹鐵路', start:'2016/05/06', keywords:['實地考察','青年實習','節慶問候'] },
-      { id:'ggb', name:'高納葛拉特鐵道', english:'Gornergrat Bahn', country:'瑞士', flag:'🇨🇭', type:'姊妹鐵路', start:'2016/05/06', keywords:['實地考察','青年實習','節慶問候'] },
-      { id:'wllr', name:'威爾普蘭菲爾鐵路', english:'Welshpool & Llanfair Light Railway', country:'英國', flag:'🇬🇧', type:'姊妹鐵路', start:'2017/09/27', keywords:['DL-34','技術交流','續約','攝影展'] },
-      { id:'chz', name:'切尼赫榮鐵路', english:'Čierny Hron Forestry Railway', country:'斯洛伐克', flag:'🇸🇰', type:'姊妹鐵路', start:'2018/12/05', keywords:['續約','紀錄片','實地交流'] },
-      { id:'zzr', name:'之字形鐵路', english:'Zig Zag Railway', country:'澳洲', flag:'🇦🇺', type:'姊妹鐵路', start:'2025/12/09', keywords:['蒸汽機車','青年交流','締結','技術報告'] },
-      { id:'rhb', name:'雷蒂亞鐵路', english:'Rhaetian Railway', country:'瑞士', flag:'🇨🇭', type:'姊妹鐵路', start:'2026/06/01', keywords:['世界遺產','B2B','Landwasser','交流訪問'] },
-      { id:'pbr', name:'普芬比利鐵路', english:'Puffing Billy Railway', country:'澳洲', flag:'🇦🇺', type:'友好／交流鐵路', start:'無', keywords:['排煙議題','志工交流'] },
-      { id:'wgr', name:'瓦爾哈拉金礦鐵道', english:'Walhalla Goldfields Railway', country:'澳洲', flag:'🇦🇺', type:'友好／交流鐵路', start:'無', keywords:['實地考察','節慶問候'] },
-      { id:'yusuhara', name:'魚梁瀨森林鐵路', english:'Yusuhara Forestry Railway', country:'日本', flag:'🇯🇵', type:'友好／交流鐵路', start:'無', keywords:['參訪','森林鐵路','日本交流'] }
-    ];
+    function mapRecord(r) {
+      return {
+        id: r.record_id,
+        railwayId: r.railway_id,
+        date: String(r.date || '').slice(0,10),
+        type: r.type,
+        title: r.title,
+        summary: r.summary || '',
+        tags: String(r.tags || '').split(',').map(x=>x.trim()).filter(Boolean),
+        parentId: r.parent_record_id || '',
+        threadId: r.thread_id || '',
+        editor: r.editor_name || r.editor_email || '',
+        updatedAt: r.updated_at || ''
+      };
+    }
 
-    const cooperationDocuments = [
-      { id:'doc-wllr-2017', railwayId:'wllr', type:'締結文件', title:'臺英姊妹鐵路締結文件', date:'2017-09-27', file:'Sister Railway Agreement 2017.pdf', editor:'Ida', visibility:'public' },
-      { id:'doc-wllr-2025', railwayId:'wllr', type:'續約文件', title:'臺英姊妹鐵路續約 LOI', date:'2025-09-03', file:'Renewal LOI 2025.pdf', editor:'Ida', visibility:'public' },
-      { id:'doc-wllr-dl34', railwayId:'wllr', type:'租借／正式合約', title:'DL-34 租借展延契約', date:'2026-03-10', file:'DL-34 Loan Extension Agreement.pdf', editor:'同事 A', visibility:'internal' },
-      { id:'doc-zzr-2025', railwayId:'zzr', type:'締結文件', title:'臺澳姊妹鐵路締結文件', date:'2025-12-09', file:'AFR-ZZR Sister Railway Agreement.pdf', editor:'Ida', visibility:'public' },
-      { id:'doc-rhb-2026', railwayId:'rhb', type:'締結文件', title:'阿里山林鐵－雷蒂亞鐵路姊妹鐵路協議', date:'2026-06-01', file:'AFR-RhB Partnership Agreement.pdf', editor:'Ida', visibility:'public' },
-      { id:'doc-chz-renew', railwayId:'chz', type:'續約文件', title:'臺斯姊妹鐵路續約文件', date:'2023-06-12', file:'AFR-CHZ Renewal Agreement.pdf', editor:'同事 B', visibility:'restricted' }
-    ];
+    function mapDocument(d) {
+      return {
+        id: d.document_id,
+        railwayId: d.railway_id,
+        type: d.document_type,
+        title: d.title,
+        date: String(d.document_date || '').slice(0,10),
+        file: d.file_url || '',
+        editor: d.editor_name || d.editor_email || '',
+        visibility: String(d.visibility || 'public').toLowerCase(),
+        note: d.note || ''
+      };
+    }
 
-    const records = [
-      { id:'rec-wllr-20260817', railwayId: 'wllr', date: '2026-08-17', type: '議題交流', title: 'DL-34 進入運轉測試階段', summary: '英方表示變速器安裝已大致完成，將進入測試階段，並詢問 DL-34 車身紅白油漆色號。', tags: ['DL-34', '維修'], threadId:'thread-dl34', parentId:'rec-wllr-20260630', editor:'Ida', updatedAt:'2026-08-19 18:40' },
-      { id:'rec-wllr-20260310', railwayId: 'wllr', date: '2026-03-10', type: '締結／協議', title: '簽署 DL-34 租借展延契約', summary: '英國威鐵代表來臺，雙方於阿里山林鐵暨文資管理處完成租借展延契約簽署。', tags: ['DL-34', '契約'], threadId:'thread-dl34', parentId:'rec-wllr-20260108', editor:'同事 A', updatedAt:'2026-03-10 16:20' },
-      { railwayId: 'zzr', date: '2025-12-09', type: '締結／協議', title: '完成臺澳姊妹鐵路締結', summary: '雙邊完成姊妹鐵路締結儀式，並同步進行官網互連與後續合作交流規劃。', tags: ['締結', '官網互連'] },
-      { railwayId: 'zzr', date: '2024-08-22', type: '議題交流', title: '收到澳方車輛檢視技術報告', summary: 'ZZR 提供 7 月來臺後的技術報告，並說明未來可能合作方向與機關車購入意願。', tags: ['技術交流'] },
-      { railwayId: 'rhb', date: '2026-06-01', type: '締結／協議', title: '阿里山林鐵與雷蒂亞鐵路締結姊妹鐵路', summary: '林業保育署代表團赴瑞士與雷蒂亞鐵路舉辦姊妹鐵路締結儀式，並進行雙邊交流。', tags: ['締結', '世界遺產'] },
-      { railwayId: 'rhb', date: '2025-11-21', type: '議題交流', title: '瑞方董事會通過締結與來訪提案', summary: 'Patrick Miescher 回覆內部董事會已同意雙邊締結姊妹鐵路及 2026 年赴瑞士參訪提案。', tags: ['締結籌備'] },
-      { railwayId: 'dhr', date: '2025-03-18', type: '議題交流', title: '印度大吉嶺鐵道回覆青年實習與蒸汽機車交流', summary: '新任主任表達期待保持聯絡，並就青年實習規劃與蒸汽機車資訊分享中心籌備交換意見。', tags: ['蒸汽機車', '青年交流'] },
-      { railwayId: 'oigawa', date: '2025-08-27', type: '議題交流', title: '討論 2026 年締結 40 週年紀念規劃', summary: '大井川鐵道社長與林鐵團隊進行線上會議，初步研商 40 週年合作構想。', tags: ['40週年'] },
-      { railwayId: 'chz', date: '2025-12-01', type: '議題交流', title: '確認紀錄片中譯與版權授權作業', summary: '與 Tibor 會面確認紀錄片中譯將由切鐵完成，並授權中譯版版權。', tags: ['紀錄片'] },
-      { railwayId: 'pbr', date: '2022-12-06', type: '議題交流', title: '交流蒸汽機車排煙與火災風險管理作法', summary: '普芬比利方分享火災高風險季節時的蒸汽機車調度與軌道沿線燃料管理經驗。', tags: ['排煙', '火災風險'] },
-      { railwayId: 'yusuhara', date: '2025-09-27', type: '實地考察', title: '代表團赴魚梁瀨森林鐵路交流', summary: '林保署、林鐵處及分署代表組團拜會魚梁瀨鐵路並安排交流。', tags: ['森林鐵路', '參訪'] },
-      { id:'rec-wllr-20260108', railwayId:'wllr', date:'2026-01-08', type:'議題交流', title:'變速器現場技術交流', summary:'英方技術團隊來臺進行變速器觀測、林鐵參訪及雙邊技術交流。', tags:['DL-34','變速器'], threadId:'thread-dl34', parentId:'' },
-      { id:'rec-wllr-20260630', railwayId:'wllr', date:'2026-06-30', type:'議題交流', title:'變速器安裝與螺絲規格確認', summary:'英方技術經理來信說明變速器安裝進度，並請林鐵確認替換螺絲規格。', tags:['DL-34','變速器','維修'], threadId:'thread-dl34', parentId:'rec-wllr-20260310' },
-      { id:'rec-kurobe-20260703', railwayId:'kurobe', date:'2026-07-03', type:'資訊更新', title:'更新林鐵近況與姊妹鐵路特展消息', summary:'向黑部峽谷鐵道更新森里號測試與沼平站姊妹鐵路特展消息。', tags:['資訊更新'] },
-      { id:'rec-mgb-20260105', railwayId:'mgb', date:'2026-01-05', type:'節慶問候', title:'收到瑞士新聯繫窗口回覆', summary:'節慶問候後收到新聯繫窗口回覆，恢復後續聯繫管道。', tags:['窗口更新'] },
-      { id:'rec-ggb-20260105', railwayId:'ggb', date:'2026-01-05', type:'節慶問候', title:'收到瑞士新聯繫窗口回覆', summary:'節慶問候後收到新聯繫窗口回覆，恢復後續聯繫管道。', tags:['窗口更新'] },
-      { id:'rec-wgr-20241220', railwayId:'wgr', date:'2024-12-20', type:'議題交流', title:'洽詢青年實習計畫', summary:'向瓦爾哈拉金礦鐵道洽詢青年實習規劃，對方回覆目前無相關計畫。', tags:['青年交流'] }
-    ];
+    async function apiGet(action='bootstrap') {
+      const res = await fetch(`${API_URL}?action=${encodeURIComponent(action)}&t=${Date.now()}`, { cache:'no-store' });
+      if (!res.ok) throw new Error(`API HTTP ${res.status}`);
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.error || 'API 讀取失敗');
+      return json.data;
+    }
+
+    async function apiPost(payload) {
+      // 使用 text/plain 避免跨網域 POST 產生 OPTIONS preflight；Apps Script 仍可讀取 JSON 內容。
+      const res = await fetch(API_URL, {
+        method:'POST',
+        headers:{ 'Content-Type':'text/plain;charset=utf-8' },
+        body:JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error(`API HTTP ${res.status}`);
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.error || 'API 寫入失敗');
+      return json;
+    }
+
+    async function loadPublicData() {
+      try {
+        const data = await apiGet('bootstrap');
+        railwayData = (data.railways || []).map(mapRailway);
+        records = (data.records || []).map(mapRecord);
+        cooperationDocuments = (data.documents || []).map(mapDocument);
+        refreshAllUI(true);
+        showToast('已連線 Google Sheet 資料庫。');
+      } catch (err) {
+        console.error(err);
+        showToast('無法讀取 Google Sheet：' + err.message);
+      }
+    }
+
+    async function applyPrivateBootstrap(idToken) {
+      const result = await apiPost({ action:'authBootstrap', idToken });
+      const data = result.data || {};
+      currentUser = result.user || data.currentUser || null;
+      editors = (data.editors || []).map(e => ({ name:e.name, email:e.email, active:true }));
+      railwayData = (data.railways || []).map(mapRailway);
+      records = (data.records || []).map(mapRecord);
+      cooperationDocuments = (data.documents || []).map(mapDocument);
+      setEditMode(true, `${currentUser?.name || currentUser?.email || '授權使用者'}｜已授權編輯`);
+      refreshAllUI(false);
+    }
+
+    function initializeGoogleIdentity() {
+      const btn = document.getElementById('googleLoginBtn');
+      if (!GOOGLE_CLIENT_ID) {
+        if (btn) btn.title = '請先建立 Google OAuth Client ID，並填入 index.html 的 GOOGLE_CLIENT_ID。';
+        setEditMode(false);
+        return;
+      }
+      if (!window.google?.accounts?.id) {
+        setTimeout(initializeGoogleIdentity, 300);
+        return;
+      }
+      google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: async (response) => {
+          try {
+            googleIdToken = response.credential;
+            await applyPrivateBootstrap(googleIdToken);
+            showToast('Google Email 白名單驗證成功，已進入編輯模式。');
+          } catch (err) {
+            googleIdToken = '';
+            currentUser = null;
+            setEditMode(false);
+            showToast(err.message || '此帳號沒有編輯權限。');
+          }
+        }
+      });
+    }
 
     const sectionMeta = {
       dashboard: {
@@ -1167,7 +1235,7 @@
       },
       'editor-settings': {
         title: '編輯人名單',
-        desc: '不用登入；可新增、停用姓名，舊紀錄仍保留原編輯者。'
+        desc: '編輯權限由 Google Email 白名單管理；名單建議直接在 Editors 工作表維護。'
       }
     };
 
@@ -1246,9 +1314,11 @@
       btn.addEventListener('click', () => goSection(btn.dataset.go));
     });
 
-    elements.quickAddBtn.addEventListener('click', () => goSection('new-record'));
+    elements.quickAddBtn.addEventListener('click', () => { if (!isAuthorizedEditor) { showToast('新增資料需先使用白名單 Google 帳號登入。'); return; } goSection('new-record'); });
     elements.exportBtn.addEventListener('click', () => showToast('Prototype 示意：正式版可選年份、鐵路與類型，匯出與附錄四相近的 Word 年表。'));
     elements.tourBtn.addEventListener('click', () => showToast('Prototype 重點：1. 卡片化管理 2. 簡化新增欄位 3. 可延伸串 Google Sheet。'));
+
+    function getEditors() { return editors; }
 
     function getRailway(id) {
       return railwayData.find(r => r.id === id);
@@ -1256,8 +1326,9 @@
 
     function formatDate(dateStr) {
       if (!dateStr) return '未填日期';
-      const d = new Date(dateStr + 'T00:00:00');
-      if (isNaN(d)) return dateStr;
+      const clean = String(dateStr).slice(0,10);
+      const d = new Date(clean + 'T00:00:00');
+      if (isNaN(d)) return clean;
       const y = d.getFullYear();
       const m = String(d.getMonth() + 1).padStart(2, '0');
       const day = String(d.getDate()).padStart(2, '0');
@@ -1265,37 +1336,31 @@
     }
 
     function renderEditorOptions() {
-      const current = elements.formEditor ? elements.formEditor.value : '';
       if (!elements.formEditor) return;
-      elements.formEditor.innerHTML = '<option value="">未指定</option>';
-      editors.filter(e => e.active).forEach(e => {
-        const opt = document.createElement('option');
-        opt.value = e.name;
-        opt.textContent = e.name;
-        elements.formEditor.appendChild(opt);
-      });
-      if ([...elements.formEditor.options].some(o => o.value === current)) elements.formEditor.value = current;
+      const label = currentUser ? (currentUser.name || currentUser.email) : '';
+      elements.formEditor.innerHTML = label ? `<option value="${label}">${label}（Google 驗證）</option>` : '<option value="">登入後自動帶入</option>';
+      elements.formEditor.disabled = true;
     }
 
     function renderEditorList() {
       if (!elements.editorList) return;
-      elements.editorList.innerHTML = editors.map((e, idx) => `
+      if (!isAuthorizedEditor) {
+        elements.editorList.innerHTML = '<div class="empty">登入授權帳號後可查看目前啟用的編輯者；名單請直接在 Google Sheet 的 Editors 工作表維護。</div>';
+        return;
+      }
+      elements.editorList.innerHTML = editors.map(e => `
         <div class="simple-item">
-          <div><strong>${e.name}</strong><span>${e.active ? '啟用中｜會出現在新增紀錄下拉選單' : '已停用｜舊紀錄仍保留姓名'}</span></div>
-          <button class="text-btn" onclick="toggleEditor(${idx})">${e.active ? '停用' : '重新啟用'}</button>
+          <div><strong>${e.name || e.email}</strong><span>${e.email}</span></div>
+          <span class="badge">啟用</span>
         </div>
-      `).join('');
-    }
-
-    window.toggleEditor = function(index) {
-      editors[index].active = !editors[index].active;
-      saveEditors();
-      renderEditorList();
-      renderEditorOptions();
-      showToast(editors[index].active ? '已重新啟用此編輯人。' : '已停用此編輯人；舊紀錄不受影響。');
+      `).join('') || '<div class="empty">Editors 工作表目前沒有啟用中的名單。</div>';
     }
 
     function populateFilters() {
+      elements.countryFilter.innerHTML = '<option value="all">全部國家</option>';
+      elements.timelineRailway.innerHTML = '';
+      elements.formRailway.innerHTML = '';
+      elements.timelineYear.innerHTML = '';
       const countries = [...new Set(railwayData.map(r => r.country))];
       countries.forEach(country => {
         const opt = document.createElement('option');
@@ -1349,10 +1414,10 @@
       const latestYearCount = records.filter(r => r.date.startsWith('2026')).length;
 
       const stats = [
-        ['合作鐵路', railwayData.length, '目前收錄 11 條姊妹鐵路及 3 條友好／交流鐵路'],
+        ['合作鐵路', railwayData.length, `目前收錄 ${sister} 條姊妹鐵路及 ${friend} 條友好／交流鐵路`],
         ['合作國家', countries, '可依國家快速查看合作網絡分布'],
         ['姊妹鐵路', sister, `另有 ${friend} 條友好／交流鐵路`],
-        ['2026 紀錄', latestYearCount, '顯示最新年度互動紀錄示意']
+        ['2026 紀錄', latestYearCount, '目前由 Google Sheet 即時讀取']
       ];
 
       elements.stats.innerHTML = stats.map(([label, value, note]) => `
@@ -1404,10 +1469,9 @@
 
     function renderDocumentEditorOptions() {
       if (!elements.docEditor) return;
-      const activeEditors = getEditors().filter(e => e.active);
-      const current = elements.docEditor.value;
-      elements.docEditor.innerHTML = '<option value="">未指定</option>' + activeEditors.map(e => `<option value="${e.name}">${e.name}</option>`).join('');
-      if (activeEditors.some(e => e.name === current)) elements.docEditor.value = current;
+      const label = currentUser ? (currentUser.name || currentUser.email) : '';
+      elements.docEditor.innerHTML = label ? `<option value="${label}">${label}（Google 驗證）</option>` : '<option value="">登入後自動帶入</option>';
+      elements.docEditor.disabled = true;
     }
 
     function populateDocumentRailways() {
@@ -1506,7 +1570,7 @@
             <div class="simple-item" style="padding:12px 14px;">
               <div>
                 <strong>${r.country}</strong>
-                <span>目前示意 ${relatedCount} 筆紀錄</span>
+                <span>目前 ${relatedCount} 筆紀錄</span>
               </div>
               <button class="text-btn" onclick="focusRailway('${r.id}')">看歷程</button>
             </div>
@@ -1658,48 +1722,43 @@
       updatePreview();
     });
 
-    elements.recordForm.addEventListener('submit', (e) => {
+    elements.recordForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const newRecord = {
-        railwayId: elements.formRailway.value,
-        date: elements.formDate.value,
-        type: elements.formType.value,
-        editor: elements.formEditor.value || '',
-        updatedAt: new Date().toLocaleString('zh-TW', { hour12:false }),
-        title: elements.formTitle.value,
-        summary: elements.formSummary.value || '（尚未補充摘要）',
-        tags: elements.formTags.value ? elements.formTags.value.split('、').join(',').split(',').map(t => t.trim()).filter(Boolean) : [],
-        id: `rec-${Date.now()}`,
-        parentId: elements.formRelated.value && !elements.formRelated.value.startsWith('thread:') ? elements.formRelated.value : '',
-        threadId: elements.formRelated.value.startsWith('thread:') ? elements.formRelated.value.replace('thread:','') : ''
-      };
-      if (newRecord.parentId) { const parent = records.find(r => r.id === newRecord.parentId); if (parent) newRecord.threadId = parent.threadId || `thread-${parent.railwayId}-${parent.date}`; }
-      records.push(newRecord);
-      renderStats();
-      renderTopics();
-      renderRailCards();
-      renderTimeline();
-      elements.recordForm.reset();
-      updatePreview();
-      goSection('timeline');
-      showToast('已新增一筆示意紀錄。正式版可改為同步寫入 Google Sheet。');
+      if (!isAuthorizedEditor || !googleIdToken) { showToast('請先使用白名單 Google 帳號登入。'); return; }
+      try {
+        const related = elements.formRelated.value || '';
+        let parentId = '';
+        let threadId = '';
+        if (related.startsWith('thread:')) threadId = related.replace('thread:','');
+        else if (related) {
+          parentId = related;
+          const parent = records.find(r => r.id === parentId);
+          threadId = parent?.threadId || (parent ? `thread-${parent.railwayId}-${parent.date}` : '');
+        }
+        await apiPost({
+          action:'createRecord', idToken:googleIdToken,
+          data:{
+            railway_id: elements.formRailway.value,
+            date: elements.formDate.value,
+            type: elements.formType.value,
+            title: elements.formTitle.value,
+            summary: elements.formSummary.value || '',
+            tags: elements.formTags.value || '',
+            parent_record_id: parentId,
+            thread_id: threadId
+          }
+        });
+        await applyPrivateBootstrap(googleIdToken);
+        elements.recordForm.reset();
+        updateRelatedOptions();
+        updatePreview();
+        goSection('timeline');
+        showToast('已寫入 Google Sheet。');
+      } catch (err) { showToast('新增失敗：' + err.message); }
     });
 
     elements.addEditorBtn.addEventListener('click', () => {
-      const name = elements.newEditorName.value.trim();
-      if (!name) { showToast('請先輸入姓名。'); return; }
-      const existing = editors.find(e => e.name === name);
-      if (existing) {
-        existing.active = true;
-        showToast('此姓名已存在，已設為啟用。');
-      } else {
-        editors.push({ name, active: true });
-        showToast('已加入編輯人名單。');
-      }
-      elements.newEditorName.value = '';
-      saveEditors();
-      renderEditorList();
-      renderEditorOptions();
+      showToast('為避免誤授權，請直接到 Google Sheet 的 Editors 工作表新增或停用 Email。');
     });
 
     [elements.railSearch, elements.typeFilter, elements.countryFilter].forEach(el => el.addEventListener('input', renderRailCards));
@@ -1707,40 +1766,78 @@
     if (elements.documentRailway) elements.documentRailway.addEventListener('input', renderDocuments);
     if (elements.documentTypeFilter) elements.documentTypeFilter.addEventListener('input', renderDocuments);
     if (elements.documentVisibilityFilter) elements.documentVisibilityFilter.addEventListener('input', renderDocuments);
-    if (elements.addDocumentBtn) elements.addDocumentBtn.addEventListener('click', () => {
+    if (elements.addDocumentBtn) elements.addDocumentBtn.addEventListener('click', async () => {
+      if (!isAuthorizedEditor || !googleIdToken) { showToast('請先使用白名單 Google 帳號登入。'); return; }
       if (!elements.docTitle.value.trim()) { showToast('請先輸入文件名稱。'); return; }
-      cooperationDocuments.push({ id:'doc-'+Date.now(), railwayId:elements.documentRailway.value, type:elements.docType.value, title:elements.docTitle.value.trim(), date:elements.docDate.value || new Date().toISOString().slice(0,10), file:elements.docLink.value.trim() || 'Prototype 新增文件.pdf', editor:elements.docEditor.value, visibility:elements.docVisibility ? elements.docVisibility.value : 'public' });
-      elements.docTitle.value=''; elements.docDate.value=''; elements.docLink.value=''; renderDocuments(); renderRailCards(); showToast('已加入一份合作文件示意。');
+      if (!elements.docLink.value.trim()) { showToast('請先貼上 Google Drive / PDF 連結。'); return; }
+      try {
+        await apiPost({
+          action:'createDocument', idToken:googleIdToken,
+          data:{
+            railway_id:elements.documentRailway.value,
+            document_type:elements.docType.value,
+            title:elements.docTitle.value.trim(),
+            document_date:elements.docDate.value || '',
+            file_url:elements.docLink.value.trim(),
+            visibility:elements.docVisibility ? elements.docVisibility.value : 'public',
+            note:''
+          }
+        });
+        await applyPrivateBootstrap(googleIdToken);
+        elements.docTitle.value=''; elements.docDate.value=''; elements.docLink.value='';
+        renderDocuments(); renderRailCards();
+        showToast('合作文件已寫入 Google Sheet。');
+      } catch (err) { showToast('新增文件失敗：' + err.message); }
     });
+
 
 
     const googleLoginBtn = document.getElementById('googleLoginBtn');
-    if (googleLoginBtn) googleLoginBtn.addEventListener('click', () => {
+    if (googleLoginBtn) googleLoginBtn.addEventListener('click', async () => {
       if (isAuthorizedEditor) {
+        googleIdToken = '';
+        currentUser = null;
+        editors = [];
+        if (window.google?.accounts?.id) google.accounts.id.disableAutoSelect();
         setEditMode(false);
-        renderDocuments();
-        showToast('已回到公開瀏覽模式。');
-      } else {
-        // Prototype：模擬 Google 登入＋Email 白名單驗證成功。
-        // 正式版會改成 Google Identity Services，絕不由前端自行信任 Email。
-        setEditMode(true, 'Ida｜已授權編輯');
-        renderDocuments();
-        showToast('Prototype：模擬白名單 Email 驗證成功。');
+        await loadPublicData();
+        showToast('已登出編輯模式。');
+        return;
       }
+      if (!GOOGLE_CLIENT_ID) {
+        showToast('Google 登入尚差 OAuth Client ID；請依 README 下一步設定。');
+        return;
+      }
+      if (!window.google?.accounts?.id) {
+        showToast('Google 登入服務尚在載入，請稍後再試。');
+        return;
+      }
+      google.accounts.id.prompt(notification => {
+        if (notification.isNotDisplayed?.() || notification.isSkippedMoment?.()) {
+          showToast('瀏覽器未顯示 Google 登入視窗；可稍後再試或確認第三方登入設定。');
+        }
+      });
     });
 
-    setEditMode(false);
+    function refreshAllUI(rebuildFilters=false) {
+      if (rebuildFilters) populateFilters();
+      renderEditorOptions();
+      renderEditorList();
+      renderStats();
+      renderCountrySummary();
+      renderTopics();
+      populateDocumentRailways();
+      renderDocumentEditorOptions();
+      renderRailCards();
+      renderTimeline();
+      renderDocuments();
+      updateRelatedOptions();
+      updatePreview();
+    }
 
-    populateFilters();
-    renderEditorOptions();
-    renderEditorList();
-    renderStats();
-    renderCountrySummary();
-    renderTopics();
-    renderRailCards();
-    renderTimeline();
-    updateRelatedOptions();
-    updatePreview();
+    setEditMode(false);
+    initializeGoogleIdentity();
+    loadPublicData();
   </script>
 </body>
 </html>
