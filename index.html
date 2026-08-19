@@ -1,0 +1,1746 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>阿里山林鐵｜國際鐵道交流合作歷程 Prototype</title>
+  <style>
+    :root {
+      --forest: #1f5a4f;
+      --forest-deep: #17443c;
+      --forest-soft: #dbeae4;
+      --rail-red: #9f3f3d;
+      --rail-red-soft: #f4e2de;
+      --sunlight: #faf7f2;
+      --mist: #f2f5f3;
+      --ink: #24312f;
+      --muted: #6e7b78;
+      --line: #d7dfdb;
+      --card: #ffffff;
+      --shadow: 0 20px 40px rgba(23, 68, 60, 0.08);
+      --radius-lg: 24px;
+      --radius-md: 18px;
+      --radius-sm: 12px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Microsoft JhengHei", sans-serif;
+      color: var(--ink);
+      background: linear-gradient(180deg, #f8faf8 0%, #f4f6f4 100%);
+    }
+
+    a { color: inherit; text-decoration: none; }
+    button, input, select, textarea { font: inherit; }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 280px 1fr;
+    }
+
+    .sidebar {
+      background: linear-gradient(180deg, rgba(31,90,79,0.97) 0%, rgba(23,68,60,0.98) 100%);
+      color: #fff;
+      padding: 28px 22px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      overflow: auto;
+    }
+
+    .brand {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .brand-mark {
+      width: 78px;
+      height: 78px;
+      border-radius: 26px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.16), rgba(255,255,255,0.04));
+      border: 1px solid rgba(255,255,255,0.14);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .brand-mark::before,
+    .brand-mark::after {
+      content: "";
+      position: absolute;
+      border: 2px solid rgba(255,255,255,0.82);
+      border-radius: 16px;
+    }
+
+    .brand-mark::before {
+      width: 46px;
+      height: 36px;
+      left: 16px;
+      top: 18px;
+      border-top-left-radius: 14px;
+      border-top-right-radius: 14px;
+      border-bottom-left-radius: 18px;
+      border-bottom-right-radius: 18px;
+    }
+
+    .brand-mark::after {
+      width: 28px;
+      height: 28px;
+      left: 25px;
+      top: 27px;
+      border-color: transparent transparent rgba(255,255,255,0.86) rgba(255,255,255,0.86);
+      transform: rotate(-45deg);
+      border-radius: 0 0 14px 14px;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 1.15rem;
+      line-height: 1.45;
+      letter-spacing: 0.02em;
+    }
+
+    .brand p {
+      margin: 0;
+      color: rgba(255,255,255,0.75);
+      line-height: 1.6;
+      font-size: 0.93rem;
+    }
+
+    .nav {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .nav-btn {
+      border: 0;
+      width: 100%;
+      background: transparent;
+      color: #fff;
+      padding: 14px 16px;
+      border-radius: 14px;
+      text-align: left;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: 0.2s ease;
+    }
+
+    .nav-btn:hover, .nav-btn.active {
+      background: rgba(255,255,255,0.12);
+      transform: translateX(2px);
+    }
+
+    .sidebar-box {
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 18px;
+      padding: 16px;
+      background: rgba(255,255,255,0.06);
+    }
+
+    .sidebar-box h3 {
+      margin: 0 0 10px;
+      font-size: 0.95rem;
+    }
+
+    .sidebar-box p,
+    .sidebar-box li {
+      margin: 0;
+      font-size: 0.88rem;
+      line-height: 1.6;
+      color: rgba(255,255,255,0.78);
+    }
+
+    .sidebar-box ul {
+      padding-left: 18px;
+      margin: 8px 0 0;
+    }
+
+    .main {
+      padding: 26px 28px 40px;
+      overflow: auto;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 22px;
+    }
+
+    .page-title h2 {
+      margin: 0;
+      font-size: 1.7rem;
+      letter-spacing: 0.01em;
+    }
+
+    .page-title p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      border: 0;
+      padding: 12px 18px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: 0.2s ease;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+    .btn.primary { background: var(--rail-red); color: white; }
+    .btn.secondary { background: white; color: var(--forest); border: 1px solid var(--line); }
+    .btn.ghost { background: var(--forest-soft); color: var(--forest); }
+
+    .hero {
+      background: linear-gradient(140deg, rgba(255,255,255,0.98), rgba(245,248,246,0.95));
+      border: 1px solid rgba(31,90,79,0.08);
+      border-radius: 30px;
+      padding: 30px;
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 22px;
+    }
+
+    .hero::before {
+      content: "";
+      position: absolute;
+      right: -40px;
+      top: -36px;
+      width: 300px;
+      height: 300px;
+      border: 24px solid rgba(31,90,79,0.07);
+      border-radius: 80px;
+      transform: rotate(-12deg);
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      right: 60px;
+      bottom: -45px;
+      width: 220px;
+      height: 90px;
+      border-top: 3px solid rgba(159,63,61,0.22);
+      border-radius: 50%;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 26px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero h3 {
+      margin: 0;
+      font-size: 2rem;
+      line-height: 1.25;
+      max-width: 14ch;
+    }
+
+    .hero p {
+      margin: 14px 0 0;
+      color: var(--muted);
+      line-height: 1.75;
+      max-width: 62ch;
+    }
+
+    .mini-note {
+      margin-top: 20px;
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      background: var(--forest-soft);
+      color: var(--forest);
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    .hero-rules {
+      background: white;
+      border-radius: 22px;
+      padding: 18px 18px 14px;
+      border: 1px solid var(--line);
+      align-self: start;
+    }
+
+    .hero-rules h4 {
+      margin: 0 0 12px;
+      font-size: 1rem;
+    }
+
+    .rule-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .rule-item {
+      padding: 12px 14px;
+      background: var(--mist);
+      border-radius: 14px;
+      display: flex;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--rail-red);
+      margin-top: 5px;
+      flex: 0 0 auto;
+    }
+
+    .content-section { display: none; }
+    .content-section.active { display: block; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+      margin-bottom: 22px;
+    }
+
+    .stat-card {
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      padding: 20px;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.03);
+    }
+
+    .stat-card small {
+      color: var(--muted);
+      display: block;
+      margin-bottom: 10px;
+    }
+
+    .stat-card strong {
+      display: block;
+      font-size: 2rem;
+      color: var(--forest-deep);
+      line-height: 1;
+    }
+
+    .stat-card span {
+      display: block;
+      margin-top: 10px;
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 0.92rem;
+    }
+
+    .panel-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 18px;
+    }
+
+    .panel {
+      background: white;
+      border-radius: 24px;
+      border: 1px solid var(--line);
+      padding: 22px;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.03);
+    }
+
+    .panel h3 {
+      margin: 0 0 14px;
+      font-size: 1.12rem;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .chip {
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: var(--mist);
+      color: var(--forest-deep);
+      font-size: 0.9rem;
+      border: 1px solid rgba(31,90,79,0.08);
+    }
+
+    .country-list,
+    .simple-list {
+      display: grid;
+      gap: 12px;
+      margin-top: 6px;
+    }
+
+    .country-item,
+    .simple-item {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 16px;
+      background: var(--mist);
+      border-radius: 16px;
+      align-items: center;
+    }
+
+    .country-item strong,
+    .simple-item strong { display: block; margin-bottom: 4px; }
+    .country-item span,
+    .simple-item span { color: var(--muted); font-size: 0.92rem; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 28px;
+      height: 28px;
+      padding: 0 10px;
+      border-radius: 999px;
+      background: var(--rail-red-soft);
+      color: var(--rail-red);
+      font-weight: 700;
+      font-size: 0.86rem;
+      white-space: nowrap;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 18px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .filters {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      flex: 1;
+    }
+
+    .input, .select, .textarea {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px 14px;
+      background: white;
+      color: var(--ink);
+      width: 100%;
+    }
+
+    .textarea {
+      min-height: 120px;
+      resize: vertical;
+      line-height: 1.7;
+    }
+
+    .search-wrap { flex: 1; min-width: 220px; }
+
+    .rail-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .rail-card {
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 20px;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.03);
+      transition: 0.2s ease;
+      display: grid;
+      gap: 14px;
+    }
+
+    .rail-card:hover { transform: translateY(-2px); }
+
+    .rail-head {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+
+    .flag {
+      width: 46px;
+      height: 46px;
+      border-radius: 14px;
+      background: var(--forest-soft);
+      display: grid;
+      place-items: center;
+      font-size: 1.3rem;
+      flex: 0 0 auto;
+    }
+
+    .rail-card h4 {
+      margin: 0;
+      font-size: 1.06rem;
+      line-height: 1.4;
+    }
+
+    .rail-card p { margin: 0; color: var(--muted); line-height: 1.65; font-size: 0.92rem; }
+
+    .meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .meta-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: var(--mist);
+      color: var(--forest);
+      font-size: 0.82rem;
+    }
+
+
+    .doc-strip {
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      padding:12px 14px; border-radius:16px; background:#fffaf7; border:1px solid #ecd9d2;
+    }
+    .doc-strip strong { display:block; font-size:.92rem; color:var(--rail-red); }
+    .doc-strip span { color:var(--muted); font-size:.82rem; }
+    .doc-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+    .doc-card { background:white; border:1px solid var(--line); border-radius:20px; padding:18px; box-shadow:0 10px 24px rgba(0,0,0,.03); }
+    .doc-card-top { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+    .doc-icon { width:42px; height:42px; border-radius:13px; display:grid; place-items:center; background:var(--rail-red-soft); color:var(--rail-red); font-weight:800; flex:0 0 auto; }
+    .doc-card h4 { margin:0 0 5px; font-size:1rem; line-height:1.45; }
+    .doc-card p { margin:0; color:var(--muted); line-height:1.65; font-size:.9rem; }
+    .doc-meta { display:flex; flex-wrap:wrap; gap:8px; margin-top:13px; }
+    .doc-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; }
+    .doc-upload-note { background:#fffaf7; border:1px dashed #dcbfb5; border-radius:18px; padding:15px; color:var(--muted); line-height:1.65; font-size:.9rem; }
+
+    .timeline-layout {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 18px;
+    }
+
+    .timeline-sidebar {
+      background: white;
+      border-radius: 24px;
+      border: 1px solid var(--line);
+      padding: 20px;
+      height: fit-content;
+      position: sticky;
+      top: 26px;
+    }
+
+    .timeline-sidebar h3 { margin-top: 0; }
+
+    .timeline-list {
+      display: grid;
+      gap: 14px;
+    }
+
+    .timeline-item {
+      position: relative;
+      background: white;
+      border-radius: 24px;
+      border: 1px solid var(--line);
+      padding: 18px 18px 18px 26px;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.03);
+    }
+
+    .timeline-item::before {
+      content: "";
+      position: absolute;
+      left: 12px;
+      top: 22px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--rail-red);
+      box-shadow: 0 0 0 5px rgba(159,63,61,0.10);
+    }
+
+    .timeline-date {
+      color: var(--rail-red);
+      font-weight: 700;
+      margin-bottom: 8px;
+      font-size: 0.9rem;
+    }
+
+    .timeline-item h4 { margin: 0 0 8px; font-size: 1.04rem; }
+    .timeline-item p { margin: 0; color: var(--muted); line-height: 1.7; }
+
+    .record-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .text-btn {
+      border: 0;
+      background: var(--mist);
+      color: var(--forest);
+      padding: 8px 12px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: 0.84rem;
+      font-weight: 600;
+    }
+
+    .form-shell {
+      display: grid;
+      grid-template-columns: 1.08fr 0.92fr;
+      gap: 18px;
+    }
+
+    .form-card,
+    .preview-card {
+      background: white;
+      border-radius: 24px;
+      border: 1px solid var(--line);
+      padding: 24px;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.03);
+    }
+
+    .form-card h3,
+    .preview-card h3 { margin-top: 0; }
+
+    .field-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .field.full { grid-column: 1 / -1; }
+    .field label {
+      display: block;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .field small {
+      display: block;
+      margin-top: 6px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .required {
+      color: var(--rail-red);
+      font-size: 0.9rem;
+      margin-left: 4px;
+    }
+
+    .hint-box {
+      background: var(--mist);
+      border-radius: 18px;
+      padding: 16px;
+      color: var(--ink);
+      line-height: 1.7;
+    }
+
+    .hint-box strong { color: var(--forest-deep); }
+
+    .preview-event {
+      border-radius: 18px;
+      border: 1px dashed rgba(31,90,79,0.24);
+      padding: 18px;
+      background: linear-gradient(180deg, #ffffff, #fbfcfb);
+    }
+
+    .preview-event h4 { margin: 8px 0; font-size: 1.05rem; }
+    .preview-event p { margin: 0; color: var(--muted); line-height: 1.7; }
+
+    .toast {
+      position: fixed;
+      right: 28px;
+      bottom: 24px;
+      background: var(--forest-deep);
+      color: white;
+      padding: 14px 18px;
+      border-radius: 16px;
+      box-shadow: 0 16px 36px rgba(0,0,0,0.18);
+      opacity: 0;
+      transform: translateY(10px);
+      pointer-events: none;
+      transition: 0.25s ease;
+      z-index: 50;
+      max-width: 320px;
+      line-height: 1.6;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .empty {
+      padding: 34px;
+      border-radius: 24px;
+      text-align: center;
+      color: var(--muted);
+      background: white;
+      border: 1px dashed var(--line);
+    }
+
+    @media (max-width: 1200px) {
+      .stats, .rail-grid, .doc-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .panel-grid, .timeline-layout, .form-shell, .hero-grid { grid-template-columns: 1fr; }
+      .timeline-sidebar { position: static; }
+    }
+
+    @media (max-width: 980px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar {
+        position: static;
+        height: auto;
+        border-bottom-left-radius: 24px;
+        border-bottom-right-radius: 24px;
+      }
+      .main { padding-top: 20px; }
+    }
+
+    @media (max-width: 720px) {
+      .stats, .rail-grid, .field-grid, .doc-grid { grid-template-columns: 1fr; }
+      .topbar { flex-direction: column; align-items: stretch; }
+      .toolbar { flex-direction: column; align-items: stretch; }
+      .main { padding: 16px; }
+      .hero, .panel, .stat-card, .timeline-item, .timeline-sidebar, .rail-card, .form-card, .preview-card { border-radius: 20px; }
+      .hero { padding: 22px; }
+      .hero h3 { font-size: 1.55rem; }
+    }
+  
+    .auth-bar { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .auth-status { padding:9px 12px; border-radius:999px; background:var(--mist); color:var(--muted); font-size:.86rem; }
+    .auth-status.authorized { background:var(--forest-soft); color:var(--forest-deep); font-weight:700; }
+    .visibility-public { background:#e6f3ec !important; color:#1f6a4f !important; }
+    .visibility-internal { background:#fff1d8 !important; color:#8a5b12 !important; }
+    .visibility-restricted { background:#f4e2de !important; color:#9f3f3d !important; }
+    .edit-only.locked { opacity:.48; pointer-events:none; filter:grayscale(.15); }
+    .access-note { margin-top:10px; font-size:.84rem; color:var(--muted); line-height:1.55; }
+
+</style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark"></div>
+        <h1>阿里山林鐵<br>國際鐵道交流合作歷程</h1>
+        <p>Prototype｜以「鐵路資料卡＋時間軸」取代長篇 Word，讓同事更容易共同新增與查找。</p>
+      </div>
+
+      <nav class="nav" aria-label="主選單">
+        <button class="nav-btn active" data-target="dashboard">總覽 <span>01</span></button>
+        <button class="nav-btn" data-target="railways">鐵路列表 <span>02</span></button>
+        <button class="nav-btn" data-target="timeline">合作歷程 <span>03</span></button>
+        <button class="nav-btn" data-target="new-record">新增紀錄 <span>04</span></button>
+        <button class="nav-btn" data-target="documents">合作文件 <span>05</span></button>
+        <button class="nav-btn" data-target="editor-settings">編輯人名單 <span>06</span></button>
+      </nav>
+
+      <div class="sidebar-box">
+        <h3>欄位精簡原則</h3>
+        <ul>
+          <li>只有 4 個必要欄位</li>
+          <li>其餘都可後補，不強制</li>
+          <li>編輯人為選填，不增加必填負擔</li>
+        </ul>
+      </div>
+
+      <div class="sidebar-box">
+        <h3>建議後續串接</h3>
+        <p>Prototype 可進一步連接 Google Sheet，讓每筆新增自動同步到網站與年度報告。</p>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div class="page-title">
+          <h2 id="pageHeading">總覽</h2>
+          <p id="pageDescription">先看整體合作輪廓，再進入單一鐵路或單筆紀錄。</p>
+        </div>
+        <div class="header-actions">
+          <div class="auth-bar">
+            <span class="auth-status" id="authStatus">公開瀏覽模式</span>
+            <button class="btn secondary" id="googleLoginBtn" type="button">使用 Google 帳號登入</button>
+          </div>
+          <button class="btn ghost edit-only locked" id="quickAddBtn">＋ 快速新增</button>
+          <button class="btn secondary" id="exportBtn">匯出 Word 示意</button>
+          <button class="btn primary" id="tourBtn">查看 Prototype 重點</button>
+        </div>
+      </div>
+
+      <section id="dashboard" class="content-section active">
+        <div class="hero">
+          <div class="hero-grid">
+            <div>
+              <h3>讓合作歷程像搭火車一樣，好找、好看、好新增。</h3>
+              <p>這個 Prototype 以阿里山林鐵品牌語彙為視覺基礎，參考「窗景、森林、鐵道紅」的調性，並將原本一路往下拉的年表，改為可按鐵路、年度與主題切換的資料頁面。新增紀錄時，先以最少必要欄位完成登錄，再視需要補充詳細內容。</p>
+              <div class="mini-note">目前設計重點：共編容易、查找快速、匯出報告保留彈性</div>
+            </div>
+            <div class="hero-rules">
+              <h4>最低填寫門檻</h4>
+              <div class="rule-list">
+                <div class="rule-item"><span class="dot"></span><div><strong>必要欄位只有 4 項</strong><br>鐵路、日期、交流性質、標題</div></div>
+                <div class="rule-item"><span class="dot"></span><div><strong>摘要先短後長</strong><br>先填一句話，之後再補完整紀錄也可以</div></div>
+                <div class="rule-item"><span class="dot"></span><div><strong>附件不必當下上傳</strong><br>可先放連結或先略過</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="stats" id="stats"></div>
+
+        <div class="panel-grid">
+          <div class="panel">
+            <h3>依國家瀏覽</h3>
+            <div class="country-list" id="countryList"></div>
+          </div>
+          <div class="panel">
+            <h3>目前常見合作主題</h3>
+            <div class="chips" id="topicChips"></div>
+            <div class="simple-list" style="margin-top:18px" id="recentList"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="railways" class="content-section">
+        <div class="toolbar">
+          <div class="filters">
+            <div class="search-wrap"><input class="input" id="railSearch" placeholder="搜尋鐵路、國家或關鍵字…"></div>
+            <select class="select" id="typeFilter">
+              <option value="all">全部類型</option>
+              <option value="姊妹鐵路">姊妹鐵路</option>
+              <option value="友好／交流鐵路">友好／交流鐵路</option>
+            </select>
+            <select class="select" id="countryFilter">
+              <option value="all">全部國家</option>
+            </select>
+          </div>
+          <button class="btn primary" data-go="new-record">＋ 新增一筆</button>
+        </div>
+        <div class="rail-grid" id="railGrid"></div>
+      </section>
+
+      <section id="timeline" class="content-section">
+        <div class="timeline-layout">
+          <div class="timeline-sidebar">
+            <h3>篩選條件</h3>
+            <div class="field" style="margin-bottom:12px;">
+              <label for="timelineRailway">鐵路</label>
+              <select id="timelineRailway" class="select"></select>
+            </div>
+            <div class="field" style="margin-bottom:12px;">
+              <label for="timelineYear">年份</label>
+              <select id="timelineYear" class="select"></select>
+            </div>
+            <div class="field" style="margin-bottom:12px;">
+              <label for="timelineType">交流性質</label>
+              <select id="timelineType" class="select">
+                <option value="all">全部</option>
+                <option value="實地考察">實地考察</option>
+                <option value="議題交流">議題交流</option>
+                <option value="資訊更新">資訊更新</option>
+                <option value="節慶問候">節慶問候</option>
+                <option value="締結／協議">締結／協議</option>
+              </select>
+            </div>
+            <div class="hint-box">
+              <strong>可想像未來正式版：</strong><br>
+              這裡可以再加入「承辦人」、「是否需追蹤」、「有無附件」、「專案名稱」等進階篩選，但 Prototype 先維持簡潔。
+            </div>
+          </div>
+          <div>
+            <div class="timeline-list" id="timelineList"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="documents" class="content-section">
+        <div class="toolbar">
+          <div class="filters">
+            <select id="documentRailway" class="select"></select>
+            <select id="documentTypeFilter" class="select">
+              <option value="all">全部文件類型</option>
+              <option value="締結文件">締結文件</option>
+              <option value="續約文件">續約文件</option>
+              <option value="LOI／MOU">LOI／MOU</option>
+              <option value="租借／正式合約">租借／正式合約</option>
+              <option value="其他正式文件">其他正式文件</option>
+            </select>
+            <select id="documentVisibilityFilter" class="select">
+              <option value="all">全部可見性</option>
+              <option value="public">公開</option>
+              <option value="internal">內部</option>
+              <option value="restricted">受限</option>
+            </select>
+          </div>
+        </div>
+        <div class="panel-grid" style="grid-template-columns:1.25fr .75fr; align-items:start;">
+          <div>
+            <div class="doc-grid" id="documentGrid"></div>
+          </div>
+          <div class="form-card edit-only locked" id="documentEditPanel">
+            <h3>新增合作文件</h3>
+            <p style="color:var(--muted);line-height:1.7;margin-top:-2px;">正式文件獨立管理，不混在一般交流紀錄裡。一條鐵路可以有多份締結、續約或租借契約。</p>
+            <div class="field" style="margin-bottom:12px;">
+              <label for="docType">文件類型</label>
+              <select id="docType" class="select"><option>締結文件</option><option>續約文件</option><option>LOI／MOU</option><option>租借／正式合約</option><option>其他正式文件</option></select>
+            </div>
+            <div class="field" style="margin-bottom:12px;">
+              <label for="docTitle">文件名稱</label>
+              <input id="docTitle" class="input" placeholder="例如：DL-34 租借展延契約">
+            </div>
+            <div class="field-grid" style="margin-bottom:12px;">
+              <div class="field"><label for="docDate">簽署／生效日期</label><input id="docDate" type="date" class="input"></div>
+              <div class="field"><label for="docEditor">上傳／編輯人</label><select id="docEditor" class="select"><option value="">未指定</option></select></div>
+            </div>
+            <div class="field" style="margin-bottom:12px;">
+              <label for="docVisibility">瀏覽權限</label>
+              <select id="docVisibility" class="select">
+                <option value="public">公開｜所有訪客可查看</option>
+                <option value="internal">內部｜Email 白名單登入後可查看</option>
+                <option value="restricted">受限｜僅顯示有此文件，不開放直接查看</option>
+              </select>
+              <small>租借正式契約建議使用「內部」或「受限」。</small>
+            </div>
+            <div class="field" style="margin-bottom:12px;">
+              <label for="docLink">PDF／雲端連結</label>
+              <input id="docLink" class="input" placeholder="Google Drive 連結，或正式版改為直接上傳 PDF">
+            </div>
+            <button id="addDocumentBtn" class="btn primary" type="button">＋ 加入文件示意</button>
+            <div class="doc-upload-note" style="margin-top:16px;">
+              <strong style="color:var(--forest-deep);">Prototype 說明</strong><br>
+              GitHub Pages 本身不能安全地把 PDF 永久存成大家共用的檔案。正式版建議把 PDF 放 Google Drive，網站保存文件名稱、類型、日期與 Drive 連結；同事就能共同查看。
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="new-record" class="content-section">
+        <div class="form-shell">
+          <div class="form-card edit-only locked" id="recordEditPanel">
+            <h3>新增交流紀錄</h3>
+            <p style="color:var(--muted); line-height:1.7; margin-top:-2px;">刻意把欄位壓到最少，避免變成繁雜文書作業。先把重要資訊記下來，之後再補附件或完整敘述。</p>
+            <form id="recordForm">
+              <div class="field-grid">
+                <div class="field">
+                  <label for="formRailway">鐵路<span class="required">＊</span></label>
+                  <select id="formRailway" class="select" required></select>
+                </div>
+                <div class="field">
+                  <label for="formDate">日期<span class="required">＊</span></label>
+                  <input id="formDate" type="date" class="input" required>
+                </div>
+                <div class="field">
+                  <label for="formType">交流性質<span class="required">＊</span></label>
+                  <select id="formType" class="select" required>
+                    <option value="">請選擇</option>
+                    <option>實地考察</option>
+                    <option>議題交流</option>
+                    <option>資訊更新</option>
+                    <option>節慶問候</option>
+                    <option>締結／協議</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="formTitle">標題<span class="required">＊</span></label>
+                  <input id="formTitle" class="input" maxlength="80" placeholder="例如：完成姊妹鐵路續約會議" required>
+                </div>
+                <div class="field">
+                  <label for="formEditor">編輯人</label>
+                  <select id="formEditor" class="select">
+                    <option value="">未指定</option>
+                  </select>
+                  <small>選填。名單可在「編輯人名單」頁自行新增或停用。</small>
+                </div>
+                <div class="field">
+                  <label>編輯資訊</label>
+                  <div class="hint-box" style="padding:12px 14px;">建立時間會由系統自動記錄，不需要手動填寫。</div>
+                </div>
+                <div class="field full">
+                  <label for="formRelated">關聯先前紀錄</label>
+                  <select id="formRelated" class="select">
+                    <option value="">無，這是新的事項</option>
+                  </select>
+                  <small>選填。選擇後，這筆紀錄會顯示「延續自」，前一筆也會出現「後續進展」。</small>
+                </div>
+                <div class="field full">
+                  <label for="formSummary">摘要說明</label>
+                  <textarea id="formSummary" class="textarea" placeholder="可先寫一句話。例：雙方確認 2026 年合作方向，並安排後續技術交流。"></textarea>
+                  <small>非必填。若時間有限，可以先略過，之後再補完整內容。</small>
+                </div>
+                <div class="field">
+                  <label for="formTags">標籤</label>
+                  <input id="formTags" class="input" placeholder="例如：蒸汽機車、續約、青年交流">
+                </div>
+                <div class="field">
+                  <label for="formLink">附件／雲端連結</label>
+                  <input id="formLink" class="input" placeholder="貼上 Google Drive 或資料夾連結">
+                </div>
+              </div>
+              <div class="header-actions" style="margin-top:8px;">
+                <button type="submit" class="btn primary">儲存示意</button>
+                <button type="button" class="btn secondary" id="fillSampleBtn">帶入範例</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="preview-card">
+            <h3>即時預覽</h3>
+            <div class="preview-event" id="previewBox">
+              <div class="badge" id="previewType">尚未選擇</div>
+              <h4 id="previewTitle">請開始填寫紀錄標題</h4>
+              <p id="previewMeta">鐵路｜日期</p>
+              <p id="previewSummary">這裡會顯示摘要預覽。若未填摘要，會以簡短提示字顯示。</p>
+            </div>
+            <div class="hint-box" style="margin-top:18px;">
+              <strong>正式版可以怎麼做？</strong><br>
+              送出後資料可寫入 Google Sheet，並同步更新鐵路頁、時間軸頁與年度匯出頁。若要更進一步，也可加上「需追蹤」勾選與寄送提醒功能。
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="editor-settings" class="content-section">
+        <div class="panel-grid">
+          <div class="panel">
+            <h3>編輯人名單</h3>
+            <p style="color:var(--muted); line-height:1.7;">正式版改為 Google Email 白名單。只有 active = TRUE 且 Email 符合的帳號才能進入編輯模式；停用後仍保留舊紀錄的編輯來源。</p>
+            <div class="field-grid" style="margin-top:18px;">
+              <div class="field">
+                <label for="newEditorName">新增姓名／Email（Prototype）</label>
+                <input id="newEditorName" class="input" placeholder="例如：王小明｜name@example.com">
+              </div>
+              <div class="field" style="display:flex; align-items:end;">
+                <button class="btn primary" id="addEditorBtn" type="button">＋ 加入名單</button>
+              </div>
+            </div>
+            <div class="simple-list" id="editorList" style="margin-top:18px;"></div>
+          </div>
+          <div class="panel">
+            <h3>正式版建議</h3>
+            <div class="hint-box">
+              <strong>GitHub Prototype：</strong><br>名單先儲存在目前瀏覽器的 localStorage，並以「登入示意」呈現白名單概念。<br><br>
+              <strong>正式共編版：</strong><br>將名單改讀 Google Sheet 的 <code>Editors</code> 工作表。管理者只要在 Sheet 新增姓名或切換「是否啟用」，所有同事的下拉選單就會同步更新，不必改 HTML，也不需要登入系統。
+            </div>
+            <div class="hint-box" style="margin-top:14px;">
+              <strong>建議欄位：</strong><br>姓名｜Email｜是否啟用｜備註<br><br>舊同事建議改成「停用」，不要刪除，以免歷史紀錄失去編輯來源。
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // === 權限 Prototype ===
+    // 正式版會由 Google Identity Services 取得 ID token，送 Apps Script 後端驗證，
+    // 再用 Editors 工作表中的 Email 白名單判斷是否能編輯。
+    let isAuthorizedEditor = false;
+
+    function setEditMode(authorized, label) {
+      isAuthorizedEditor = authorized;
+      document.querySelectorAll('.edit-only').forEach(el => el.classList.toggle('locked', !authorized));
+      const status = document.getElementById('authStatus');
+      if (status) {
+        status.textContent = authorized ? (label || '已授權編輯') : '公開瀏覽模式';
+        status.classList.toggle('authorized', authorized);
+      }
+      const loginBtn = document.getElementById('googleLoginBtn');
+      if (loginBtn) loginBtn.textContent = authorized ? '登出編輯模式' : '使用 Google 帳號登入';
+    }
+
+    const DEFAULT_EDITORS = [
+      { name: 'Ida', email: 'ida@example.com', active: true },
+      { name: '同事 A', email: 'colleague-a@example.com', active: true },
+      { name: '同事 B', email: 'colleague-b@example.com', active: true }
+    ];
+
+    function loadEditors() {
+      try {
+        const saved = JSON.parse(localStorage.getItem('afr-editors-v1'));
+        return Array.isArray(saved) && saved.length ? saved : DEFAULT_EDITORS.map(x => ({...x}));
+      } catch (e) {
+        return DEFAULT_EDITORS.map(x => ({...x}));
+      }
+    }
+
+    let editors = loadEditors();
+
+    function saveEditors() {
+      localStorage.setItem('afr-editors-v1', JSON.stringify(editors));
+    }
+
+    const railwayData = [
+      { id:'oigawa', name:'大井川鐵道', english:'Ōigawa Railway', country:'日本', flag:'🇯🇵', type:'姊妹鐵路', start:'1986/01/25', keywords:['40週年','實地考察','節慶問候'] },
+      { id:'kurobe', name:'黑部峽谷鐵道', english:'Kurobe Gorge Railway', country:'日本', flag:'🇯🇵', type:'姊妹鐵路', start:'2013/04/20', keywords:['觀光列車','社群媒體','實地考察'] },
+      { id:'dhr', name:'大吉嶺喜馬拉雅鐵道', english:'Darjeeling Himalayan Railway', country:'印度', flag:'🇮🇳', type:'姊妹鐵路', start:'2016/12/24', keywords:['蒸汽機車','青年實習','世界遺產'] },
+      { id:'ksr', name:'寇卡西姆拉鐵道', english:'Kalka Shimla Railway', country:'印度', flag:'🇮🇳', type:'姊妹鐵路', start:'2016/12/24', keywords:['印度山地鐵路','世界遺產'] },
+      { id:'nmr', name:'尼吉里登山鐵道', english:'Nilgiri Mountain Railway', country:'印度', flag:'🇮🇳', type:'姊妹鐵路', start:'2016/12/24', keywords:['印度山地鐵路','世界遺產'] },
+      { id:'mgb', name:'馬特洪哥塔鐵道', english:'Matterhorn Gotthard Bahn', country:'瑞士', flag:'🇨🇭', type:'姊妹鐵路', start:'2016/05/06', keywords:['實地考察','青年實習','節慶問候'] },
+      { id:'ggb', name:'高納葛拉特鐵道', english:'Gornergrat Bahn', country:'瑞士', flag:'🇨🇭', type:'姊妹鐵路', start:'2016/05/06', keywords:['實地考察','青年實習','節慶問候'] },
+      { id:'wllr', name:'威爾普蘭菲爾鐵路', english:'Welshpool & Llanfair Light Railway', country:'英國', flag:'🇬🇧', type:'姊妹鐵路', start:'2017/09/27', keywords:['DL-34','技術交流','續約','攝影展'] },
+      { id:'chz', name:'切尼赫榮鐵路', english:'Čierny Hron Forestry Railway', country:'斯洛伐克', flag:'🇸🇰', type:'姊妹鐵路', start:'2018/12/05', keywords:['續約','紀錄片','實地交流'] },
+      { id:'zzr', name:'之字形鐵路', english:'Zig Zag Railway', country:'澳洲', flag:'🇦🇺', type:'姊妹鐵路', start:'2025/12/09', keywords:['蒸汽機車','青年交流','締結','技術報告'] },
+      { id:'rhb', name:'雷蒂亞鐵路', english:'Rhaetian Railway', country:'瑞士', flag:'🇨🇭', type:'姊妹鐵路', start:'2026/06/01', keywords:['世界遺產','B2B','Landwasser','交流訪問'] },
+      { id:'pbr', name:'普芬比利鐵路', english:'Puffing Billy Railway', country:'澳洲', flag:'🇦🇺', type:'友好／交流鐵路', start:'無', keywords:['排煙議題','志工交流'] },
+      { id:'wgr', name:'瓦爾哈拉金礦鐵道', english:'Walhalla Goldfields Railway', country:'澳洲', flag:'🇦🇺', type:'友好／交流鐵路', start:'無', keywords:['實地考察','節慶問候'] },
+      { id:'yusuhara', name:'魚梁瀨森林鐵路', english:'Yusuhara Forestry Railway', country:'日本', flag:'🇯🇵', type:'友好／交流鐵路', start:'無', keywords:['參訪','森林鐵路','日本交流'] }
+    ];
+
+    const cooperationDocuments = [
+      { id:'doc-wllr-2017', railwayId:'wllr', type:'締結文件', title:'臺英姊妹鐵路締結文件', date:'2017-09-27', file:'Sister Railway Agreement 2017.pdf', editor:'Ida', visibility:'public' },
+      { id:'doc-wllr-2025', railwayId:'wllr', type:'續約文件', title:'臺英姊妹鐵路續約 LOI', date:'2025-09-03', file:'Renewal LOI 2025.pdf', editor:'Ida', visibility:'public' },
+      { id:'doc-wllr-dl34', railwayId:'wllr', type:'租借／正式合約', title:'DL-34 租借展延契約', date:'2026-03-10', file:'DL-34 Loan Extension Agreement.pdf', editor:'同事 A', visibility:'internal' },
+      { id:'doc-zzr-2025', railwayId:'zzr', type:'締結文件', title:'臺澳姊妹鐵路締結文件', date:'2025-12-09', file:'AFR-ZZR Sister Railway Agreement.pdf', editor:'Ida', visibility:'public' },
+      { id:'doc-rhb-2026', railwayId:'rhb', type:'締結文件', title:'阿里山林鐵－雷蒂亞鐵路姊妹鐵路協議', date:'2026-06-01', file:'AFR-RhB Partnership Agreement.pdf', editor:'Ida', visibility:'public' },
+      { id:'doc-chz-renew', railwayId:'chz', type:'續約文件', title:'臺斯姊妹鐵路續約文件', date:'2023-06-12', file:'AFR-CHZ Renewal Agreement.pdf', editor:'同事 B', visibility:'restricted' }
+    ];
+
+    const records = [
+      { id:'rec-wllr-20260817', railwayId: 'wllr', date: '2026-08-17', type: '議題交流', title: 'DL-34 進入運轉測試階段', summary: '英方表示變速器安裝已大致完成，將進入測試階段，並詢問 DL-34 車身紅白油漆色號。', tags: ['DL-34', '維修'], threadId:'thread-dl34', parentId:'rec-wllr-20260630', editor:'Ida', updatedAt:'2026-08-19 18:40' },
+      { id:'rec-wllr-20260310', railwayId: 'wllr', date: '2026-03-10', type: '締結／協議', title: '簽署 DL-34 租借展延契約', summary: '英國威鐵代表來臺，雙方於阿里山林鐵暨文資管理處完成租借展延契約簽署。', tags: ['DL-34', '契約'], threadId:'thread-dl34', parentId:'rec-wllr-20260108', editor:'同事 A', updatedAt:'2026-03-10 16:20' },
+      { railwayId: 'zzr', date: '2025-12-09', type: '締結／協議', title: '完成臺澳姊妹鐵路締結', summary: '雙邊完成姊妹鐵路締結儀式，並同步進行官網互連與後續合作交流規劃。', tags: ['締結', '官網互連'] },
+      { railwayId: 'zzr', date: '2024-08-22', type: '議題交流', title: '收到澳方車輛檢視技術報告', summary: 'ZZR 提供 7 月來臺後的技術報告，並說明未來可能合作方向與機關車購入意願。', tags: ['技術交流'] },
+      { railwayId: 'rhb', date: '2026-06-01', type: '締結／協議', title: '阿里山林鐵與雷蒂亞鐵路締結姊妹鐵路', summary: '林業保育署代表團赴瑞士與雷蒂亞鐵路舉辦姊妹鐵路締結儀式，並進行雙邊交流。', tags: ['締結', '世界遺產'] },
+      { railwayId: 'rhb', date: '2025-11-21', type: '議題交流', title: '瑞方董事會通過締結與來訪提案', summary: 'Patrick Miescher 回覆內部董事會已同意雙邊締結姊妹鐵路及 2026 年赴瑞士參訪提案。', tags: ['締結籌備'] },
+      { railwayId: 'dhr', date: '2025-03-18', type: '議題交流', title: '印度大吉嶺鐵道回覆青年實習與蒸汽機車交流', summary: '新任主任表達期待保持聯絡，並就青年實習規劃與蒸汽機車資訊分享中心籌備交換意見。', tags: ['蒸汽機車', '青年交流'] },
+      { railwayId: 'oigawa', date: '2025-08-27', type: '議題交流', title: '討論 2026 年締結 40 週年紀念規劃', summary: '大井川鐵道社長與林鐵團隊進行線上會議，初步研商 40 週年合作構想。', tags: ['40週年'] },
+      { railwayId: 'chz', date: '2025-12-01', type: '議題交流', title: '確認紀錄片中譯與版權授權作業', summary: '與 Tibor 會面確認紀錄片中譯將由切鐵完成，並授權中譯版版權。', tags: ['紀錄片'] },
+      { railwayId: 'pbr', date: '2022-12-06', type: '議題交流', title: '交流蒸汽機車排煙與火災風險管理作法', summary: '普芬比利方分享火災高風險季節時的蒸汽機車調度與軌道沿線燃料管理經驗。', tags: ['排煙', '火災風險'] },
+      { railwayId: 'yusuhara', date: '2025-09-27', type: '實地考察', title: '代表團赴魚梁瀨森林鐵路交流', summary: '林保署、林鐵處及分署代表組團拜會魚梁瀨鐵路並安排交流。', tags: ['森林鐵路', '參訪'] },
+      { id:'rec-wllr-20260108', railwayId:'wllr', date:'2026-01-08', type:'議題交流', title:'變速器現場技術交流', summary:'英方技術團隊來臺進行變速器觀測、林鐵參訪及雙邊技術交流。', tags:['DL-34','變速器'], threadId:'thread-dl34', parentId:'' },
+      { id:'rec-wllr-20260630', railwayId:'wllr', date:'2026-06-30', type:'議題交流', title:'變速器安裝與螺絲規格確認', summary:'英方技術經理來信說明變速器安裝進度，並請林鐵確認替換螺絲規格。', tags:['DL-34','變速器','維修'], threadId:'thread-dl34', parentId:'rec-wllr-20260310' },
+      { id:'rec-kurobe-20260703', railwayId:'kurobe', date:'2026-07-03', type:'資訊更新', title:'更新林鐵近況與姊妹鐵路特展消息', summary:'向黑部峽谷鐵道更新森里號測試與沼平站姊妹鐵路特展消息。', tags:['資訊更新'] },
+      { id:'rec-mgb-20260105', railwayId:'mgb', date:'2026-01-05', type:'節慶問候', title:'收到瑞士新聯繫窗口回覆', summary:'節慶問候後收到新聯繫窗口回覆，恢復後續聯繫管道。', tags:['窗口更新'] },
+      { id:'rec-ggb-20260105', railwayId:'ggb', date:'2026-01-05', type:'節慶問候', title:'收到瑞士新聯繫窗口回覆', summary:'節慶問候後收到新聯繫窗口回覆，恢復後續聯繫管道。', tags:['窗口更新'] },
+      { id:'rec-wgr-20241220', railwayId:'wgr', date:'2024-12-20', type:'議題交流', title:'洽詢青年實習計畫', summary:'向瓦爾哈拉金礦鐵道洽詢青年實習規劃，對方回覆目前無相關計畫。', tags:['青年交流'] }
+    ];
+
+    const sectionMeta = {
+      dashboard: {
+        title: '總覽',
+        desc: '先看整體合作輪廓，再進入單一鐵路或單筆紀錄。'
+      },
+      railways: {
+        title: '鐵路列表',
+        desc: '用卡片查看合作對象，快速了解國家、類型與合作重點。'
+      },
+      timeline: {
+        title: '合作歷程',
+        desc: '依鐵路、年份或交流性質篩選歷程，不再需要一直往下拉 Word。'
+      },
+      documents: {
+        title: '合作文件',
+        desc: '集中管理締結、續約、LOI、租借契約與其他正式文件。'
+      },
+      'new-record': {
+        title: '新增紀錄',
+        desc: '先快速記下核心資訊，後續再補充完整附件或紀錄內容。'
+      },
+      'editor-settings': {
+        title: '編輯人名單',
+        desc: '不用登入；可新增、停用姓名，舊紀錄仍保留原編輯者。'
+      }
+    };
+
+    const elements = {
+      navBtns: document.querySelectorAll('.nav-btn'),
+      sections: document.querySelectorAll('.content-section'),
+      pageHeading: document.getElementById('pageHeading'),
+      pageDescription: document.getElementById('pageDescription'),
+      stats: document.getElementById('stats'),
+      countryList: document.getElementById('countryList'),
+      topicChips: document.getElementById('topicChips'),
+      recentList: document.getElementById('recentList'),
+      railGrid: document.getElementById('railGrid'),
+      railSearch: document.getElementById('railSearch'),
+      typeFilter: document.getElementById('typeFilter'),
+      countryFilter: document.getElementById('countryFilter'),
+      timelineRailway: document.getElementById('timelineRailway'),
+      timelineYear: document.getElementById('timelineYear'),
+      timelineType: document.getElementById('timelineType'),
+      timelineList: document.getElementById('timelineList'),
+      formRailway: document.getElementById('formRailway'),
+      formDate: document.getElementById('formDate'),
+      formType: document.getElementById('formType'),
+      formRelated: document.getElementById('formRelated'),
+      formEditor: document.getElementById('formEditor'),
+      formTitle: document.getElementById('formTitle'),
+      formSummary: document.getElementById('formSummary'),
+      formTags: document.getElementById('formTags'),
+      formLink: document.getElementById('formLink'),
+      recordForm: document.getElementById('recordForm'),
+      previewType: document.getElementById('previewType'),
+      previewTitle: document.getElementById('previewTitle'),
+      previewMeta: document.getElementById('previewMeta'),
+      previewSummary: document.getElementById('previewSummary'),
+      toast: document.getElementById('toast'),
+      quickAddBtn: document.getElementById('quickAddBtn'),
+      exportBtn: document.getElementById('exportBtn'),
+      fillSampleBtn: document.getElementById('fillSampleBtn'),
+      tourBtn: document.getElementById('tourBtn'),
+      editorList: document.getElementById('editorList'),
+      newEditorName: document.getElementById('newEditorName'),
+      addEditorBtn: document.getElementById('addEditorBtn'),
+      documentRailway: document.getElementById('documentRailway'),
+      documentTypeFilter: document.getElementById('documentTypeFilter'),
+      documentVisibilityFilter: document.getElementById('documentVisibilityFilter'),
+      documentGrid: document.getElementById('documentGrid'),
+      docType: document.getElementById('docType'),
+      docTitle: document.getElementById('docTitle'),
+      docDate: document.getElementById('docDate'),
+      docEditor: document.getElementById('docEditor'),
+      docLink: document.getElementById('docLink'),
+      docVisibility: document.getElementById('docVisibility'),
+      addDocumentBtn: document.getElementById('addDocumentBtn')
+    };
+
+    function showToast(message) {
+      elements.toast.textContent = message;
+      elements.toast.classList.add('show');
+      clearTimeout(showToast.timer);
+      showToast.timer = setTimeout(() => elements.toast.classList.remove('show'), 2400);
+    }
+
+    function goSection(target) {
+      elements.navBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.target === target));
+      elements.sections.forEach(sec => sec.classList.toggle('active', sec.id === target));
+      elements.pageHeading.textContent = sectionMeta[target].title;
+      elements.pageDescription.textContent = sectionMeta[target].desc;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    elements.navBtns.forEach(btn => {
+      btn.addEventListener('click', () => goSection(btn.dataset.target));
+    });
+
+    document.querySelectorAll('[data-go]').forEach(btn => {
+      btn.addEventListener('click', () => goSection(btn.dataset.go));
+    });
+
+    elements.quickAddBtn.addEventListener('click', () => goSection('new-record'));
+    elements.exportBtn.addEventListener('click', () => showToast('Prototype 示意：正式版可選年份、鐵路與類型，匯出與附錄四相近的 Word 年表。'));
+    elements.tourBtn.addEventListener('click', () => showToast('Prototype 重點：1. 卡片化管理 2. 簡化新增欄位 3. 可延伸串 Google Sheet。'));
+
+    function getRailway(id) {
+      return railwayData.find(r => r.id === id);
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return '未填日期';
+      const d = new Date(dateStr + 'T00:00:00');
+      if (isNaN(d)) return dateStr;
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}.${m}.${day}`;
+    }
+
+    function renderEditorOptions() {
+      const current = elements.formEditor ? elements.formEditor.value : '';
+      if (!elements.formEditor) return;
+      elements.formEditor.innerHTML = '<option value="">未指定</option>';
+      editors.filter(e => e.active).forEach(e => {
+        const opt = document.createElement('option');
+        opt.value = e.name;
+        opt.textContent = e.name;
+        elements.formEditor.appendChild(opt);
+      });
+      if ([...elements.formEditor.options].some(o => o.value === current)) elements.formEditor.value = current;
+    }
+
+    function renderEditorList() {
+      if (!elements.editorList) return;
+      elements.editorList.innerHTML = editors.map((e, idx) => `
+        <div class="simple-item">
+          <div><strong>${e.name}</strong><span>${e.active ? '啟用中｜會出現在新增紀錄下拉選單' : '已停用｜舊紀錄仍保留姓名'}</span></div>
+          <button class="text-btn" onclick="toggleEditor(${idx})">${e.active ? '停用' : '重新啟用'}</button>
+        </div>
+      `).join('');
+    }
+
+    window.toggleEditor = function(index) {
+      editors[index].active = !editors[index].active;
+      saveEditors();
+      renderEditorList();
+      renderEditorOptions();
+      showToast(editors[index].active ? '已重新啟用此編輯人。' : '已停用此編輯人；舊紀錄不受影響。');
+    }
+
+    function populateFilters() {
+      const countries = [...new Set(railwayData.map(r => r.country))];
+      countries.forEach(country => {
+        const opt = document.createElement('option');
+        opt.value = country;
+        opt.textContent = country;
+        elements.countryFilter.appendChild(opt);
+      });
+
+      const allOpt = document.createElement('option');
+      allOpt.value = 'all';
+      allOpt.textContent = '全部鐵路';
+      elements.timelineRailway.appendChild(allOpt);
+
+      const formPlaceholder = document.createElement('option');
+      formPlaceholder.value = '';
+      formPlaceholder.textContent = '請選擇鐵路';
+      elements.formRailway.appendChild(formPlaceholder);
+
+      ['姊妹鐵路','友好／交流鐵路'].forEach(groupName => {
+        const group1 = document.createElement('optgroup');
+        group1.label = groupName;
+        const group2 = document.createElement('optgroup');
+        group2.label = groupName;
+        railwayData.filter(r => r.type === groupName).forEach(r => {
+          const op1 = document.createElement('option');
+          op1.value = r.id;
+          op1.textContent = `${r.flag} ${r.name}`;
+          group1.appendChild(op1);
+          const op2 = document.createElement('option');
+          op2.value = r.id;
+          op2.textContent = `${r.flag} ${r.name}`;
+          group2.appendChild(op2);
+        });
+        elements.timelineRailway.appendChild(group1);
+        elements.formRailway.appendChild(group2);
+      });
+
+      const years = [...new Set(records.map(r => r.date.slice(0, 4)))].sort((a, b) => b.localeCompare(a));
+      [{ value: 'all', text: '全部年份' }, ...years.map(y => ({ value: y, text: y }))].forEach(o => {
+        const opt = document.createElement('option');
+        opt.value = o.value;
+        opt.textContent = o.text;
+        elements.timelineYear.appendChild(opt);
+      });
+    }
+
+    function renderStats() {
+      const sister = railwayData.filter(r => r.type === '姊妹鐵路').length;
+      const friend = railwayData.filter(r => r.type !== '姊妹鐵路').length;
+      const countries = new Set(railwayData.map(r => r.country)).size;
+      const latestYearCount = records.filter(r => r.date.startsWith('2026')).length;
+
+      const stats = [
+        ['合作鐵路', railwayData.length, '目前收錄 11 條姊妹鐵路及 3 條友好／交流鐵路'],
+        ['合作國家', countries, '可依國家快速查看合作網絡分布'],
+        ['姊妹鐵路', sister, `另有 ${friend} 條友好／交流鐵路`],
+        ['2026 紀錄', latestYearCount, '顯示最新年度互動紀錄示意']
+      ];
+
+      elements.stats.innerHTML = stats.map(([label, value, note]) => `
+        <article class="stat-card">
+          <small>${label}</small>
+          <strong>${value}</strong>
+          <span>${note}</span>
+        </article>
+      `).join('');
+    }
+
+    function renderCountrySummary() {
+      const summary = {};
+      railwayData.forEach(r => {
+        summary[r.country] = (summary[r.country] || 0) + 1;
+      });
+      elements.countryList.innerHTML = Object.entries(summary)
+        .sort((a,b) => b[1]-a[1])
+        .map(([country, count]) => `
+          <div class="country-item">
+            <div>
+              <strong>${country}</strong>
+              <span>${count} 條鐵路／合作對象</span>
+            </div>
+            <span class="badge">${count}</span>
+          </div>
+        `).join('');
+    }
+
+    function renderTopics() {
+      const topics = ['蒸汽機車', '世界遺產', '締結與續約', '青年交流', '技術維修', '攝影展', '行銷合作'];
+      elements.topicChips.innerHTML = topics.map(topic => `<span class="chip">${topic}</span>`).join('');
+
+      const recent = [...records].sort((a,b) => b.date.localeCompare(a.date)).slice(0,4);
+      elements.recentList.innerHTML = recent.map(rec => {
+        const railway = getRailway(rec.railwayId);
+        return `
+          <div class="simple-item">
+            <div>
+              <strong>${rec.title}</strong>
+              <span>${railway.flag} ${railway.name}｜${formatDate(rec.date)}</span>
+            </div>
+            <span class="badge">${rec.type}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+
+    function renderDocumentEditorOptions() {
+      if (!elements.docEditor) return;
+      const activeEditors = getEditors().filter(e => e.active);
+      const current = elements.docEditor.value;
+      elements.docEditor.innerHTML = '<option value="">未指定</option>' + activeEditors.map(e => `<option value="${e.name}">${e.name}</option>`).join('');
+      if (activeEditors.some(e => e.name === current)) elements.docEditor.value = current;
+    }
+
+    function populateDocumentRailways() {
+      if (!elements.documentRailway) return;
+      elements.documentRailway.innerHTML = '';
+      ['姊妹鐵路','友好／交流鐵路'].forEach(groupName => {
+        const group = document.createElement('optgroup');
+        group.label = groupName;
+        railwayData.filter(r => r.type === groupName).forEach(r => {
+          const opt = document.createElement('option'); opt.value = r.id; opt.textContent = `${r.flag} ${r.name}`; group.appendChild(opt);
+        });
+        elements.documentRailway.appendChild(group);
+      });
+      elements.documentRailway.value = 'wllr';
+    }
+
+    function renderDocuments() {
+      if (!elements.documentGrid) return;
+      const railwayId = elements.documentRailway.value;
+      const type = elements.documentTypeFilter.value;
+      const visibilityFilter = elements.documentVisibilityFilter ? elements.documentVisibilityFilter.value : 'all';
+      const railway = getRailway(railwayId);
+      const docs = cooperationDocuments.filter(d => {
+        const vis = d.visibility || 'public';
+        const allowedByVisibility = vis === 'public' || isAuthorizedEditor || vis === 'restricted';
+        return d.railwayId === railwayId && (type === 'all' || d.type === type) && (visibilityFilter === 'all' || vis === visibilityFilter) && allowedByVisibility;
+      }).sort((a,b)=>b.date.localeCompare(a.date));
+      if (!docs.length) {
+        elements.documentGrid.innerHTML = `<div class="empty" style="grid-column:1/-1;">${railway ? railway.name : '此鐵路'}目前尚未建立合作文件。<br><span style="font-size:.9rem;">可在右側新增締結、續約、合約或其他正式文件。</span></div>`;
+        return;
+      }
+      elements.documentGrid.innerHTML = docs.map(d => `
+        <article class="doc-card">
+          <div class="doc-card-top">
+            <div style="display:flex;gap:12px;align-items:flex-start;">
+              <div class="doc-icon">PDF</div>
+              <div><h4>${d.title}</h4><p>${railway.flag} ${railway.name}</p></div>
+            </div>
+            <div style="display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end;"><span class="badge">${d.type}</span><span class="badge visibility-${d.visibility || 'public'}">${(d.visibility||'public')==='public'?'公開':(d.visibility==='internal'?'內部':'受限')}</span></div>
+          </div>
+          <div class="doc-meta">
+            <span class="meta-pill">日期 ${formatDate(d.date)}</span>
+            ${d.editor ? `<span class="meta-pill">編輯 ${d.editor}</span>` : ''}
+          </div>
+          <p style="margin-top:12px;">${d.file || 'PDF／雲端文件'}</p>
+          <div class="doc-actions">
+            ${(d.visibility||'public')==='restricted' ? '<button class="text-btn" onclick="showToast(\'此文件設為受限：只顯示文件存在，不直接開放檔案。\')">受限文件</button>' : ((d.visibility||'public')==='internal' && !isAuthorizedEditor ? '<button class="text-btn" onclick="showToast(\'此文件僅限授權 Email 登入後查看。\')">登入後查看</button>' : '<button class="text-btn" onclick="showToast(\'Prototype 示意：正式版會開啟受權限控管的 Google Drive／PDF。\')">開啟文件</button>')}
+            ${isAuthorizedEditor ? '<button class="text-btn" onclick="showToast(\'Prototype 示意：可更新文件名稱、類型、日期或替換檔案連結。\')">編輯資訊</button>' : ''}
+          </div>
+        </article>`).join('');
+    }
+
+    window.focusDocuments = function(id) {
+      goSection('documents');
+      elements.documentRailway.value = id;
+      elements.documentTypeFilter.value = 'all';
+      renderDocuments();
+    };
+
+    function renderRailCards() {
+      const keyword = elements.railSearch.value.trim().toLowerCase();
+      const type = elements.typeFilter.value;
+      const country = elements.countryFilter.value;
+
+      const filtered = railwayData.filter(r => {
+        const text = `${r.name} ${r.english} ${r.country} ${r.keywords.join(' ')}`.toLowerCase();
+        const matchesKeyword = !keyword || text.includes(keyword);
+        const matchesType = type === 'all' || r.type === type;
+        const matchesCountry = country === 'all' || r.country === country;
+        return matchesKeyword && matchesType && matchesCountry;
+      });
+
+      if (!filtered.length) {
+        elements.railGrid.innerHTML = '<div class="empty" style="grid-column:1/-1;">沒有符合條件的鐵路資料。</div>';
+        return;
+      }
+
+      elements.railGrid.innerHTML = filtered.map(r => {
+        const relatedCount = records.filter(rec => rec.railwayId === r.id).length;
+        return `
+          <article class="rail-card">
+            <div class="rail-head">
+              <div style="display:flex; gap:12px; align-items:flex-start;">
+                <div class="flag">${r.flag}</div>
+                <div>
+                  <h4>${r.name}</h4>
+                  <p>${r.english}</p>
+                </div>
+              </div>
+              <span class="badge">${r.type}</span>
+            </div>
+            <p>合作起點：${r.start}</p>
+            <div class="meta-row">
+              ${r.keywords.map(k => `<span class="meta-pill">${k}</span>`).join('')}
+            </div>
+            <div class="simple-item" style="padding:12px 14px;">
+              <div>
+                <strong>${r.country}</strong>
+                <span>目前示意 ${relatedCount} 筆紀錄</span>
+              </div>
+              <button class="text-btn" onclick="focusRailway('${r.id}')">看歷程</button>
+            </div>
+            <div class="doc-strip">
+              <div>
+                <strong>合作文件</strong>
+                <span>${cooperationDocuments.filter(d => d.railwayId === r.id).length ? `已收錄 ${cooperationDocuments.filter(d => d.railwayId === r.id).length} 份正式文件` : '尚未建立文件'}</span>
+              </div>
+              <button class="text-btn" onclick="focusDocuments('${r.id}')">查看文件</button>
+            </div>
+          </article>
+        `;
+      }).join('');
+    }
+
+    window.focusRailway = function(id) {
+      elements.timelineRailway.value = id;
+      goSection('timeline');
+      renderTimeline();
+    }
+
+    function renderTimeline() {
+      const railwayFilter = elements.timelineRailway.value;
+      const yearFilter = elements.timelineYear.value;
+      const typeFilter = elements.timelineType.value;
+
+      const filtered = [...records]
+        .filter(r => {
+          const railPass = railwayFilter === 'all' || r.railwayId === railwayFilter;
+          const yearPass = yearFilter === 'all' || r.date.startsWith(yearFilter);
+          const typePass = typeFilter === 'all' || r.type === typeFilter;
+          return railPass && yearPass && typePass;
+        })
+        .sort((a,b) => b.date.localeCompare(a.date));
+
+      if (!filtered.length) {
+        elements.timelineList.innerHTML = '<div class="empty">目前沒有符合條件的紀錄。</div>';
+        return;
+      }
+
+      elements.timelineList.innerHTML = filtered.map(rec => {
+        const railway = getRailway(rec.railwayId);
+        return `
+          <article class="timeline-item">
+            <div class="timeline-date">${formatDate(rec.date)}｜${railway.flag} ${railway.name}</div>
+            <span class="badge">${rec.type}</span>
+            <h4>${rec.title}</h4>
+            <p>${rec.summary}</p>
+            ${rec.parentId ? `<div class="hint-box" style="margin-top:12px; padding:12px 14px;"><strong>↳ 延續自：</strong> ${(() => { const p=records.find(x=>x.id===rec.parentId); return p ? `${formatDate(p.date)}｜${p.title}` : '先前紀錄'; })()}</div>` : ''}
+            ${rec.threadId ? `<div class="record-actions"><button class="text-btn" onclick="showThread('${rec.threadId}')">只看這一串合作</button></div>` : ''}
+            <div class="meta-row" style="margin-top:12px;">
+              ${(rec.tags || []).map(tag => `<span class="meta-pill">${tag}</span>`).join('')}
+            </div>
+            ${rec.editor ? `<div style="margin-top:12px; color:var(--muted); font-size:.82rem;">最後編輯：${rec.editor}${rec.updatedAt ? ` · ${rec.updatedAt}` : ''}</div>` : ''}
+            <div class="record-actions">
+              <button class="text-btn" onclick="showToast('Prototype 示意：正式版可開啟完整紀錄頁。')">查看全文</button>
+              <button class="text-btn" onclick="showToast('Prototype 示意：正式版可編輯或補附件。')">補充內容</button>
+            </div>
+          </article>
+        `;
+      }).join('');
+    }
+
+    window.showThread = function(threadId) {
+      const filtered = [...records].filter(r => r.threadId === threadId).sort((a,b) => a.date.localeCompare(b.date));
+      elements.timelineRailway.value = 'all';
+      elements.timelineYear.value = 'all';
+      elements.timelineType.value = 'all';
+      elements.timelineList.innerHTML = filtered.map((rec, idx) => {
+        const railway = getRailway(rec.railwayId);
+        return `<article class="timeline-item">
+          <div class="timeline-date">${formatDate(rec.date)}｜${railway.flag} ${railway.name}</div>
+          <span class="badge">${rec.type}</span>
+          <h4>${rec.title}</h4>
+          <p>${rec.summary}</p>
+          ${idx>0 ? `<div class="hint-box" style="margin-top:12px; padding:12px 14px;"><strong>↳ 延續自：</strong> ${formatDate(filtered[idx-1].date)}｜${filtered[idx-1].title}</div>` : ''}
+          ${rec.editor ? `<div style="margin-top:12px; color:var(--muted); font-size:.82rem;">最後編輯：${rec.editor}${rec.updatedAt ? ` · ${rec.updatedAt}` : ''}</div>` : ''}
+        </article>`;
+      }).join('');
+      showToast('目前只顯示同一串關聯合作紀錄。');
+    }
+
+    function updateRelatedOptions() {
+      const selectedRail = elements.formRailway.value;
+      const current = elements.formRelated.value;
+      elements.formRelated.innerHTML = '<option value="">無，這是新的事項</option>';
+      if (!selectedRail) return;
+      const sameRail = records.filter(r => r.railwayId === selectedRail).sort((a,b) => b.date.localeCompare(a.date));
+      if (sameRail.length) {
+        const recentGroup = document.createElement('optgroup');
+        recentGroup.label = '同一鐵路近期紀錄';
+        sameRail.slice(0,5).forEach(r => {
+          const op = document.createElement('option');
+          op.value = r.id || `${r.railwayId}-${r.date}-${r.title}`;
+          op.textContent = `${formatDate(r.date)}｜${r.title}`;
+          recentGroup.appendChild(op);
+        });
+        elements.formRelated.appendChild(recentGroup);
+      }
+      const threadRecords = records.filter(r => r.railwayId === selectedRail && r.threadId);
+      if (threadRecords.length) {
+        const threadGroup = document.createElement('optgroup');
+        threadGroup.label = '已存在的合作串';
+        const seen = new Set();
+        threadRecords.forEach(r => {
+          if (seen.has(r.threadId)) return;
+          seen.add(r.threadId);
+          const op = document.createElement('option');
+          op.value = `thread:${r.threadId}`;
+          op.textContent = r.threadId === 'thread-dl34' ? 'DL-34 英國動態展示與維修' : r.threadId;
+          threadGroup.appendChild(op);
+        });
+        elements.formRelated.appendChild(threadGroup);
+      }
+      if ([...elements.formRelated.options].some(o => o.value === current)) elements.formRelated.value = current;
+    }
+
+    function updatePreview() {
+      const rail = getRailway(elements.formRailway.value);
+      const date = elements.formDate.value ? formatDate(elements.formDate.value) : '尚未填寫日期';
+      elements.previewType.textContent = elements.formType.value || '尚未選擇';
+      elements.previewTitle.textContent = elements.formTitle.value || '請開始填寫紀錄標題';
+      elements.previewMeta.textContent = `${rail ? rail.flag + ' ' + rail.name : '請選擇鐵路'}｜${date}${elements.formEditor.value ? '｜編輯：' + elements.formEditor.value : ''}`;
+      elements.previewSummary.textContent = elements.formSummary.value || '這裡會顯示摘要預覽。若未填摘要，會以簡短提示字顯示。';
+    }
+
+    elements.formRailway.addEventListener('change', updateRelatedOptions);
+
+    [
+      elements.formRailway,
+      elements.formDate,
+      elements.formType,
+      elements.formEditor,
+      elements.formTitle,
+      elements.formSummary
+    ].forEach(el => el.addEventListener('input', updatePreview));
+
+    elements.fillSampleBtn.addEventListener('click', () => {
+      elements.formRailway.value = 'zzr';
+      elements.formDate.value = '2026-09-09';
+      elements.formType.value = '議題交流';
+      elements.formEditor.value = 'Ida';
+      updateRelatedOptions();
+      elements.formRelated.value = 'rec-zzr-2025-12-09';
+      elements.formTitle.value = '確認臺澳蒸汽機車交流會議議程';
+      elements.formSummary.value = '雙方確認線上會議日期、與會名單及蒸汽機車維修分享重點。';
+      elements.formTags.value = '蒸汽機車、技術交流';
+      elements.formLink.value = '';
+      updatePreview();
+    });
+
+    elements.recordForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const newRecord = {
+        railwayId: elements.formRailway.value,
+        date: elements.formDate.value,
+        type: elements.formType.value,
+        editor: elements.formEditor.value || '',
+        updatedAt: new Date().toLocaleString('zh-TW', { hour12:false }),
+        title: elements.formTitle.value,
+        summary: elements.formSummary.value || '（尚未補充摘要）',
+        tags: elements.formTags.value ? elements.formTags.value.split('、').join(',').split(',').map(t => t.trim()).filter(Boolean) : [],
+        id: `rec-${Date.now()}`,
+        parentId: elements.formRelated.value && !elements.formRelated.value.startsWith('thread:') ? elements.formRelated.value : '',
+        threadId: elements.formRelated.value.startsWith('thread:') ? elements.formRelated.value.replace('thread:','') : ''
+      };
+      if (newRecord.parentId) { const parent = records.find(r => r.id === newRecord.parentId); if (parent) newRecord.threadId = parent.threadId || `thread-${parent.railwayId}-${parent.date}`; }
+      records.push(newRecord);
+      renderStats();
+      renderTopics();
+      renderRailCards();
+      renderTimeline();
+      elements.recordForm.reset();
+      updatePreview();
+      goSection('timeline');
+      showToast('已新增一筆示意紀錄。正式版可改為同步寫入 Google Sheet。');
+    });
+
+    elements.addEditorBtn.addEventListener('click', () => {
+      const name = elements.newEditorName.value.trim();
+      if (!name) { showToast('請先輸入姓名。'); return; }
+      const existing = editors.find(e => e.name === name);
+      if (existing) {
+        existing.active = true;
+        showToast('此姓名已存在，已設為啟用。');
+      } else {
+        editors.push({ name, active: true });
+        showToast('已加入編輯人名單。');
+      }
+      elements.newEditorName.value = '';
+      saveEditors();
+      renderEditorList();
+      renderEditorOptions();
+    });
+
+    [elements.railSearch, elements.typeFilter, elements.countryFilter].forEach(el => el.addEventListener('input', renderRailCards));
+    [elements.timelineRailway, elements.timelineYear, elements.timelineType].forEach(el => el.addEventListener('input', renderTimeline));
+    if (elements.documentRailway) elements.documentRailway.addEventListener('input', renderDocuments);
+    if (elements.documentTypeFilter) elements.documentTypeFilter.addEventListener('input', renderDocuments);
+    if (elements.documentVisibilityFilter) elements.documentVisibilityFilter.addEventListener('input', renderDocuments);
+    if (elements.addDocumentBtn) elements.addDocumentBtn.addEventListener('click', () => {
+      if (!elements.docTitle.value.trim()) { showToast('請先輸入文件名稱。'); return; }
+      cooperationDocuments.push({ id:'doc-'+Date.now(), railwayId:elements.documentRailway.value, type:elements.docType.value, title:elements.docTitle.value.trim(), date:elements.docDate.value || new Date().toISOString().slice(0,10), file:elements.docLink.value.trim() || 'Prototype 新增文件.pdf', editor:elements.docEditor.value, visibility:elements.docVisibility ? elements.docVisibility.value : 'public' });
+      elements.docTitle.value=''; elements.docDate.value=''; elements.docLink.value=''; renderDocuments(); renderRailCards(); showToast('已加入一份合作文件示意。');
+    });
+
+
+    const googleLoginBtn = document.getElementById('googleLoginBtn');
+    if (googleLoginBtn) googleLoginBtn.addEventListener('click', () => {
+      if (isAuthorizedEditor) {
+        setEditMode(false);
+        renderDocuments();
+        showToast('已回到公開瀏覽模式。');
+      } else {
+        // Prototype：模擬 Google 登入＋Email 白名單驗證成功。
+        // 正式版會改成 Google Identity Services，絕不由前端自行信任 Email。
+        setEditMode(true, 'Ida｜已授權編輯');
+        renderDocuments();
+        showToast('Prototype：模擬白名單 Email 驗證成功。');
+      }
+    });
+
+    setEditMode(false);
+
+    populateFilters();
+    renderEditorOptions();
+    renderEditorList();
+    renderStats();
+    renderCountrySummary();
+    renderTopics();
+    renderRailCards();
+    renderTimeline();
+    updateRelatedOptions();
+    updatePreview();
+  </script>
+</body>
+</html>
