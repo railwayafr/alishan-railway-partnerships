@@ -1063,9 +1063,8 @@
   <script>
     // === Live API / Google Identity 設定 ===
     const API_URL = 'https://script.google.com/macros/s/AKfycbzJwDP8CLiIvNVL6LbTvCOER9Y29yhufHv88h7KA3hybzg59SB-bB_gUF184BwU8cdC/exec';
-    // 下一步在 Google Cloud 建立「Web application」OAuth Client ID 後，將 Client ID 貼在這裡。
-    // 例：1234567890-xxxxxxxx.apps.googleusercontent.com
-    const GOOGLE_CLIENT_ID = '';
+    // Google Identity Services Web OAuth Client ID。Client ID 是公開識別碼，不是密碼。
+    const GOOGLE_CLIENT_ID = '72811054895-rjo9nd6rmj5i42jqa30ule6afrjfr3u0.apps.googleusercontent.com';
 
     let isAuthorizedEditor = false;
     let googleIdToken = '';
@@ -1805,7 +1804,7 @@
         return;
       }
       if (!GOOGLE_CLIENT_ID) {
-        showToast('Google 登入尚差 OAuth Client ID；請依 README 下一步設定。');
+        showToast('Google 登入設定尚未完成。');
         return;
       }
       if (!window.google?.accounts?.id) {
