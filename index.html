@@ -864,6 +864,8 @@
                 <option value="資訊更新">資訊更新</option>
                 <option value="節慶問候">節慶問候</option>
                 <option value="締結／協議">締結／協議</option>
+                <option value="行銷合作">行銷合作</option>
+                <option value="其他">其他</option>
               </select>
             </div>
             <div class="hint-box">可依鐵路、年份與交流性質快速篩選；關聯紀錄可協助追蹤同一合作事項的延續進展。</div>
@@ -882,9 +884,9 @@
               <option value="all">全部文件類型</option>
               <option value="締結文件">締結文件</option>
               <option value="續約文件">續約文件</option>
-              <option value="LOI／MOU">LOI／MOU</option>
               <option value="租借／正式合約">租借／正式合約</option>
-              <option value="其他正式文件">其他正式文件</option>
+              <option value="技術／合作協議">技術／合作協議</option>
+              <option value="其他正式文件">其他正式文件（如會議紀錄）</option>
             </select>
             <select id="documentVisibilityFilter" class="select">
               <option value="all">全部可見性</option>
@@ -903,7 +905,7 @@
             <p style="color:var(--muted);line-height:1.7;margin-top:-2px;">正式文件獨立管理，不混在一般交流紀錄裡。一條鐵路可以有多份締結、續約或租借契約。</p>
             <div class="field" style="margin-bottom:12px;">
               <label for="docType">文件類型</label>
-              <select id="docType" class="select"><option>締結文件</option><option>續約文件</option><option>LOI／MOU</option><option>租借／正式合約</option><option>其他正式文件</option></select>
+              <select id="docType" class="select"><option>締結文件</option><option>續約文件</option><option>租借／正式合約</option><option>技術／合作協議</option><option value="其他正式文件">其他正式文件（如會議紀錄）</option></select>
             </div>
             <div class="field" style="margin-bottom:12px;">
               <label for="docTitle">文件名稱</label>
@@ -951,6 +953,7 @@
               </div>
             </div>
             <button id="addDocumentBtn" class="btn primary" type="button">上傳並建立文件</button>
+            <button id="backToRecordBtn" class="btn secondary" type="button" style="display:none; margin-left:8px;">返回新增紀錄</button>
             <div class="doc-upload-note" style="margin-top:16px;">Google Drive 根資料夾維持「受限」。新上傳 PDF 會進入文件庫；若使用既有 Drive PDF，系統只登錄檔案 ID，不會重複建立副本。所有下載仍由後端依權限驗證。</div>
           </div>
         </div>
@@ -980,6 +983,8 @@
                     <option>資訊更新</option>
                     <option>節慶問候</option>
                     <option>締結／協議</option>
+                    <option>行銷合作</option>
+                    <option>其他</option>
                   </select>
                 </div>
                 <div class="field">
@@ -1013,6 +1018,7 @@
                   <label>PDF 文件</label>
                   <button id="recordUploadPdfBtn" class="btn secondary" type="button" style="width:100%; border-radius:14px; text-align:left;">＋ 上傳 PDF 文件</button>
                   <small>會開啟「合作文件」頁，並自動帶入目前選擇的鐵路、日期與標題，再選擇文件類型與瀏覽權限。</small>
+                  <div id="pendingDocumentsBox" class="hint-box" style="display:none; margin-top:10px; padding:10px 12px;"></div>
                 </div>
                 <div class="field">
                   <label for="formLink">雲端資料夾／照片連結</label>
@@ -1111,6 +1117,8 @@
     let railwayData = [];
     let records = [];
     let cooperationDocuments = [];
+    let pendingDocumentIds = [];
+    let documentOpenedFromRecord = false;
 
     const COUNTRY_FLAGS = { '日本':'🇯🇵','印度':'🇮🇳','瑞士':'🇨🇭','英國':'🇬🇧','斯洛伐克':'🇸🇰','澳洲':'🇦🇺','臺灣':'🇹🇼' };
 
@@ -1176,7 +1184,8 @@
         fileSize: Number(d.file_size || 0),
         editor: d.editor_name || d.editor_email || '',
         visibility: String(d.visibility || 'public').toLowerCase(),
-        note: d.note || ''
+        note: d.note || '',
+        relatedRecordId: d.related_record_id || ''
       };
     }
 
@@ -1271,7 +1280,7 @@
       },
       documents: {
         title: '合作文件',
-        desc: '集中管理締結、續約、LOI、租借契約與其他正式文件。'
+        desc: '集中管理締結、續約、租借契約、技術／合作協議與其他正式文件。'
       },
       'new-record': {
         title: '新增紀錄',
@@ -1313,6 +1322,8 @@
       formSummary: document.getElementById('formSummary'),
       formLink: document.getElementById('formLink'),
       recordUploadPdfBtn: document.getElementById('recordUploadPdfBtn'),
+      pendingDocumentsBox: document.getElementById('pendingDocumentsBox'),
+      backToRecordBtn: document.getElementById('backToRecordBtn'),
       saveDraftBtn: document.getElementById('saveDraftBtn'),
       clearDraftBtn: document.getElementById('clearDraftBtn'),
       draftStatus: document.getElementById('draftStatus'),
@@ -1369,7 +1380,13 @@
     }
 
     elements.navBtns.forEach(btn => {
-      btn.addEventListener('click', () => goSection(btn.dataset.target));
+      btn.addEventListener('click', () => {
+        if (btn.dataset.target === 'documents') {
+          documentOpenedFromRecord = false;
+          if (elements.backToRecordBtn) elements.backToRecordBtn.style.display = 'none';
+        }
+        goSection(btn.dataset.target);
+      });
     });
 
     document.querySelectorAll('[data-go]').forEach(btn => {
@@ -1680,6 +1697,7 @@
             <span class="badge">${rec.type}</span>
             <h4>${rec.title}</h4>
             <p>${rec.summary}</p>
+            ${(() => { const ds=cooperationDocuments.filter(d=>d.relatedRecordId===rec.id); return ds.length ? `<div class="hint-box" style="margin-top:12px;padding:12px 14px;"><strong>相關正式文件：</strong> ${ds.map(d=>d.title).join('、')} <button class="text-btn" style="margin-left:6px;" onclick="focusDocuments('${rec.railwayId}')">查看文件</button></div>` : ''; })()}
             ${rec.parentId ? `<div class="hint-box" style="margin-top:12px; padding:12px 14px;"><strong>↳ 延續自：</strong> ${(() => { const p=records.find(x=>x.id===rec.parentId); return p ? `${formatDate(p.date)}｜${p.title}` : '先前紀錄'; })()}</div>` : ''}
             ${rec.threadId ? `<div class="record-actions"><button class="text-btn" onclick="showThread('${rec.threadId}')">只看這一串合作</button></div>` : ''}
             ${rec.editor ? `<div style="margin-top:12px; color:var(--muted); font-size:.82rem;">最後編輯：${rec.editor}${rec.updatedAt ? ` · ${rec.updatedAt}` : ''}</div>` : ''}
@@ -1781,6 +1799,7 @@
         related: elements.formRelated.value || '',
         summary: elements.formSummary.value || '',
         cloudLink: elements.formLink.value || '',
+        pendingDocumentIds: [...pendingDocumentIds],
         savedAt: new Date().toISOString()
       };
     }
@@ -1789,12 +1808,12 @@
       if (elements.draftStatus) elements.draftStatus.textContent = message;
     }
 
-    function saveRecordDraft() {
+    function saveRecordDraft(showMessage = true) {
       const draft = collectRecordDraft();
       localStorage.setItem(RECORD_DRAFT_KEY, JSON.stringify(draft));
       const t = new Date(draft.savedAt).toLocaleString('zh-TW', {hour12:false});
       updateDraftStatus(`草稿已儲存於此瀏覽器｜${t}`);
-      showToast('草稿已儲存。重新整理或之後回來仍可恢復。');
+      if (showMessage) showToast('草稿已儲存。重新整理或之後回來仍可恢復。');
     }
 
     function restoreRecordDraft() {
@@ -1811,6 +1830,8 @@
         if (d.related) elements.formRelated.value = d.related;
         if (d.summary) elements.formSummary.value = d.summary;
         if (d.cloudLink) elements.formLink.value = d.cloudLink;
+        pendingDocumentIds = Array.isArray(d.pendingDocumentIds) ? d.pendingDocumentIds : [];
+        renderPendingDocuments();
         updatePreview();
         const t = d.savedAt ? new Date(d.savedAt).toLocaleString('zh-TW', {hour12:false}) : '';
         updateDraftStatus(`已恢復此瀏覽器中的草稿${t ? `｜上次儲存 ${t}` : ''}`);
@@ -1821,6 +1842,7 @@
 
     function clearRecordDraft() {
       localStorage.removeItem(RECORD_DRAFT_KEY);
+      resetPendingDocuments();
       updateDraftStatus('草稿已清除；目前表單內容仍保留，除非重新整理或自行清空。');
       showToast('已清除已儲存的草稿。');
     }
@@ -1838,6 +1860,25 @@
       } catch (_) { showToast('雲端連結格式不正確。'); }
     };
 
+
+    function renderPendingDocuments() {
+      if (!elements.pendingDocumentsBox) return;
+      if (!pendingDocumentIds.length) {
+        elements.pendingDocumentsBox.style.display = 'none';
+        elements.pendingDocumentsBox.innerHTML = '';
+        return;
+      }
+      const docs = pendingDocumentIds.map(id => cooperationDocuments.find(d => d.id === id)).filter(Boolean);
+      elements.pendingDocumentsBox.style.display = 'block';
+      elements.pendingDocumentsBox.innerHTML = `<strong>已上傳 ${pendingDocumentIds.length} 份相關文件</strong><br>${docs.map(d => `📎 ${d.title}`).join('<br>')}<br><span style="color:var(--muted);font-size:.84rem;">按「儲存紀錄」後會自動與本筆交流紀錄建立關聯。</span>`;
+    }
+
+    function resetPendingDocuments() {
+      pendingDocumentIds = [];
+      documentOpenedFromRecord = false;
+      renderPendingDocuments();
+    }
+
     elements.recordForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       if (!isAuthorizedEditor || !googleIdToken) { showToast('請先使用白名單 Google 帳號登入。'); return; }
@@ -1851,7 +1892,7 @@
           const parent = records.find(r => r.id === parentId);
           threadId = parent?.threadId || (parent ? `thread-${parent.railwayId}-${parent.date}` : '');
         }
-        await apiPost({
+        const createResult = await apiPost({
           action:'createRecord', idToken:googleIdToken,
           data:{
             railway_id: elements.formRailway.value,
@@ -1864,8 +1905,13 @@
             thread_id: threadId
           }
         });
+        const newRecordId = createResult?.data?.record_id || '';
+        if (newRecordId && pendingDocumentIds.length) {
+          await apiPost({ action:'linkDocumentsToRecord', idToken:googleIdToken, data:{ record_id:newRecordId, document_ids:pendingDocumentIds } });
+        }
         await applyPrivateBootstrap(googleIdToken);
         elements.recordForm.reset();
+        resetPendingDocuments();
         localStorage.removeItem(RECORD_DRAFT_KEY);
         updateDraftStatus('正式紀錄已儲存，草稿已清除。');
         updateRelatedOptions();
@@ -1883,6 +1929,9 @@
     if (elements.clearDraftBtn) elements.clearDraftBtn.addEventListener('click', clearRecordDraft);
     if (elements.recordUploadPdfBtn) elements.recordUploadPdfBtn.addEventListener('click', () => {
       if (!elements.formRailway.value) { showToast('請先選擇鐵路，再上傳 PDF。'); return; }
+      saveRecordDraft(false);
+      documentOpenedFromRecord = true;
+      if (elements.backToRecordBtn) elements.backToRecordBtn.style.display = 'inline-flex';
       if (elements.documentRailway) elements.documentRailway.value = elements.formRailway.value;
       if (elements.docDate && elements.formDate.value) elements.docDate.value = elements.formDate.value;
       if (elements.docTitle && elements.formTitle.value.trim()) elements.docTitle.value = elements.formTitle.value.trim();
@@ -1893,6 +1942,10 @@
         elements.docFile?.focus();
       }, 250);
       showToast('已帶入鐵路、日期與標題；請選文件類型、權限與 PDF。');
+    });
+    if (elements.backToRecordBtn) elements.backToRecordBtn.addEventListener('click', () => {
+      goSection('new-record');
+      renderPendingDocuments();
     });
 
     [elements.railSearch, elements.typeFilter, elements.countryFilter].forEach(el => el.addEventListener('input', renderRailCards));
@@ -1985,7 +2038,7 @@
           if (file.size > 8 * 1024 * 1024) { showToast('PDF 超過 8 MB，請先壓縮後再上傳。'); return; }
           elements.addDocumentBtn.textContent = '上傳中…';
           const base64 = await fileToBase64(file);
-          await apiPost({
+          var documentResult = await apiPost({
             action:'uploadDocument', idToken:googleIdToken,
             data:{...commonData, file_name:file.name, mime_type:file.type || 'application/pdf', file_base64:base64}
           });
@@ -1993,15 +2046,23 @@
           const driveUrl = elements.docDriveUrl?.value.trim() || '';
           if (!driveUrl) { showToast('請貼上 Google Drive PDF 檔案連結。'); return; }
           elements.addDocumentBtn.textContent = '連結中…';
-          await apiPost({ action:'registerDriveDocument', idToken:googleIdToken, data:{...commonData, drive_url:driveUrl} });
+          var documentResult = await apiPost({ action:'registerDriveDocument', idToken:googleIdToken, data:{...commonData, drive_url:driveUrl} });
         }
 
+        const createdDocumentId = documentResult?.data?.document_id || '';
+        if (documentOpenedFromRecord && createdDocumentId && !pendingDocumentIds.includes(createdDocumentId)) { pendingDocumentIds.push(createdDocumentId); saveRecordDraft(false); }
         await applyPrivateBootstrap(googleIdToken);
         elements.docTitle.value=''; elements.docDate.value='';
         if (elements.docDriveUrl) elements.docDriveUrl.value='';
         setSelectedPdf(null);
         renderDocuments(); renderRailCards();
-        showToast(documentUploadMode === 'file' ? 'PDF 已上傳至 Google Drive 並建立文件紀錄。' : '既有 Google Drive PDF 已連結並建立文件紀錄。');
+        if (documentOpenedFromRecord) {
+          goSection('new-record');
+          renderPendingDocuments();
+          showToast('文件已上傳；請確認內容後按「儲存紀錄」，系統會自動建立關聯。');
+        } else {
+          showToast(documentUploadMode === 'file' ? 'PDF 已上傳至 Google Drive 並建立文件紀錄。' : '既有 Google Drive PDF 已連結並建立文件紀錄。');
+        }
       } catch (err) { showToast('建立文件失敗：' + err.message); }
       finally {
         elements.addDocumentBtn.disabled=false;
