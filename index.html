@@ -967,18 +967,22 @@
                   <small>非必填。若時間有限，可以先略過，之後再補完整內容。</small>
                 </div>
                 <div class="field">
-                  <label for="formTags">標籤</label>
-                  <input id="formTags" class="input" placeholder="例如：蒸汽機車、續約、青年交流">
+                  <label>PDF 文件</label>
+                  <button id="recordUploadPdfBtn" class="btn secondary" type="button" style="width:100%; border-radius:14px; text-align:left;">＋ 上傳 PDF 文件</button>
+                  <small>會開啟「合作文件」頁，並自動帶入目前選擇的鐵路、日期與標題，再選擇文件類型與瀏覽權限。</small>
                 </div>
                 <div class="field">
-                  <label for="formLink">附件／雲端連結</label>
-                  <input id="formLink" class="input" placeholder="貼上 Google Drive 或資料夾連結">
+                  <label for="formLink">雲端資料夾／照片連結</label>
+                  <input id="formLink" class="input" placeholder="貼上 Google Drive、OneDrive、Dropbox 或其他資料夾連結">
+                  <small>適合放參訪照片、對方分享資料夾或大型附件；僅授權編輯者登入後顯示連結。</small>
                 </div>
               </div>
               <div class="header-actions" style="margin-top:8px;">
-                <button type="submit" class="btn primary">儲存示意</button>
-                <button type="button" class="btn secondary" id="fillSampleBtn">帶入範例</button>
+                <button type="submit" class="btn primary">儲存紀錄</button>
+                <button type="button" class="btn secondary" id="saveDraftBtn">儲存草稿</button>
+                <button type="button" class="btn secondary" id="clearDraftBtn">清除草稿</button>
               </div>
+              <div id="draftStatus" style="margin-top:10px; color:var(--muted); font-size:.84rem; line-height:1.6;">草稿只儲存在目前瀏覽器，不會寫入正式 Google Sheet。</div>
             </form>
           </div>
 
@@ -991,8 +995,8 @@
               <p id="previewSummary">這裡會顯示摘要預覽。若未填摘要，會以簡短提示字顯示。</p>
             </div>
             <div class="hint-box" style="margin-top:18px;">
-              <strong>正式版可以怎麼做？</strong><br>
-              送出後資料可寫入 Google Sheet，並同步更新鐵路頁、時間軸頁與年度匯出頁。若要更進一步，也可加上「需追蹤」勾選與寄送提醒功能。
+              <strong>紀錄提醒：</strong><br>
+              未完成內容可先「儲存草稿」在目前瀏覽器；正式儲存後才會寫入 Google Sheet。PDF 正式文件請使用左側「上傳 PDF 文件」入口。
             </div>
           </div>
         </div>
@@ -1064,6 +1068,7 @@
     let railwayData = [];
     let records = [];
     let cooperationDocuments = [];
+    let draftRestoredOnce = false;
 
     const COUNTRY_FLAGS = { '日本':'🇯🇵','印度':'🇮🇳','瑞士':'🇨🇭','英國':'🇬🇧','斯洛伐克':'🇸🇰','澳洲':'🇦🇺','臺灣':'🇹🇼' };
 
@@ -1109,6 +1114,7 @@
         title: r.title,
         summary: r.summary || '',
         tags: String(r.tags || '').split(',').map(x=>x.trim()).filter(Boolean),
+        cloudLink: r.cloud_link || '',
         parentId: r.parent_record_id || '',
         threadId: r.thread_id || '',
         editor: r.editor_name || r.editor_email || '',
@@ -1160,6 +1166,7 @@
         records = (data.records || []).map(mapRecord);
         cooperationDocuments = (data.documents || []).map(mapDocument);
         refreshAllUI(true);
+        if (!draftRestoredOnce) { restoreRecordDraft(); draftRestoredOnce = true; }
         showToast('已連線 Google Sheet 資料庫。');
       } catch (err) {
         console.error(err);
@@ -1262,8 +1269,11 @@
       formEditor: document.getElementById('formEditor'),
       formTitle: document.getElementById('formTitle'),
       formSummary: document.getElementById('formSummary'),
-      formTags: document.getElementById('formTags'),
       formLink: document.getElementById('formLink'),
+      recordUploadPdfBtn: document.getElementById('recordUploadPdfBtn'),
+      saveDraftBtn: document.getElementById('saveDraftBtn'),
+      clearDraftBtn: document.getElementById('clearDraftBtn'),
+      draftStatus: document.getElementById('draftStatus'),
       recordForm: document.getElementById('recordForm'),
       previewType: document.getElementById('previewType'),
       previewTitle: document.getElementById('previewTitle'),
@@ -1271,7 +1281,6 @@
       previewSummary: document.getElementById('previewSummary'),
       toast: document.getElementById('toast'),
       quickAddBtn: document.getElementById('quickAddBtn'),
-      fillSampleBtn: document.getElementById('fillSampleBtn'),
       editorList: document.getElementById('editorList'),
       newEditorName: document.getElementById('newEditorName'),
       addEditorBtn: document.getElementById('addEditorBtn'),
@@ -1621,11 +1630,9 @@
             <p>${rec.summary}</p>
             ${rec.parentId ? `<div class="hint-box" style="margin-top:12px; padding:12px 14px;"><strong>↳ 延續自：</strong> ${(() => { const p=records.find(x=>x.id===rec.parentId); return p ? `${formatDate(p.date)}｜${p.title}` : '先前紀錄'; })()}</div>` : ''}
             ${rec.threadId ? `<div class="record-actions"><button class="text-btn" onclick="showThread('${rec.threadId}')">只看這一串合作</button></div>` : ''}
-            <div class="meta-row" style="margin-top:12px;">
-              ${(rec.tags || []).map(tag => `<span class="meta-pill">${tag}</span>`).join('')}
-            </div>
             ${rec.editor ? `<div style="margin-top:12px; color:var(--muted); font-size:.82rem;">最後編輯：${rec.editor}${rec.updatedAt ? ` · ${rec.updatedAt}` : ''}</div>` : ''}
             <div class="record-actions">
+              ${rec.cloudLink ? `<button class="text-btn" onclick="openCloudLink(decodeURIComponent('${encodeURIComponent(rec.cloudLink)}'))">開啟雲端資料夾</button>` : ''}
               <button class="text-btn" onclick="showToast('完整紀錄頁可於後續版本擴充。')">查看全文</button>
               <button class="text-btn" onclick="showToast('編輯既有紀錄可於後續版本擴充。')">補充內容</button>
             </div>
@@ -1708,19 +1715,76 @@
       elements.formSummary
     ].forEach(el => el.addEventListener('input', updatePreview));
 
-    elements.fillSampleBtn.addEventListener('click', () => {
-      elements.formRailway.value = 'zzr';
-      elements.formDate.value = '2026-09-09';
-      elements.formType.value = '議題交流';
-      elements.formEditor.value = 'Ida';
-      updateRelatedOptions();
-      elements.formRelated.value = 'rec-zzr-2025-12-09';
-      elements.formTitle.value = '確認臺澳蒸汽機車交流會議議程';
-      elements.formSummary.value = '雙方確認線上會議日期、與會名單及蒸汽機車維修分享重點。';
-      elements.formTags.value = '蒸汽機車、技術交流';
-      elements.formLink.value = '';
-      updatePreview();
-    });
+
+
+    const RECORD_DRAFT_KEY = 'afr_record_draft_v71';
+
+    function collectRecordDraft() {
+      return {
+        railway: elements.formRailway.value || '',
+        date: elements.formDate.value || '',
+        type: elements.formType.value || '',
+        title: elements.formTitle.value || '',
+        editor: elements.formEditor.value || '',
+        related: elements.formRelated.value || '',
+        summary: elements.formSummary.value || '',
+        cloudLink: elements.formLink.value || '',
+        savedAt: new Date().toISOString()
+      };
+    }
+
+    function updateDraftStatus(message) {
+      if (elements.draftStatus) elements.draftStatus.textContent = message;
+    }
+
+    function saveRecordDraft() {
+      const draft = collectRecordDraft();
+      localStorage.setItem(RECORD_DRAFT_KEY, JSON.stringify(draft));
+      const t = new Date(draft.savedAt).toLocaleString('zh-TW', {hour12:false});
+      updateDraftStatus(`草稿已儲存於此瀏覽器｜${t}`);
+      showToast('草稿已儲存。重新整理或之後回來仍可恢復。');
+    }
+
+    function restoreRecordDraft() {
+      try {
+        const raw = localStorage.getItem(RECORD_DRAFT_KEY);
+        if (!raw) return;
+        const d = JSON.parse(raw);
+        if (d.railway) elements.formRailway.value = d.railway;
+        updateRelatedOptions();
+        if (d.date) elements.formDate.value = d.date;
+        if (d.type) elements.formType.value = d.type;
+        if (d.title) elements.formTitle.value = d.title;
+        if (d.editor) elements.formEditor.value = d.editor;
+        if (d.related) elements.formRelated.value = d.related;
+        if (d.summary) elements.formSummary.value = d.summary;
+        if (d.cloudLink) elements.formLink.value = d.cloudLink;
+        updatePreview();
+        const t = d.savedAt ? new Date(d.savedAt).toLocaleString('zh-TW', {hour12:false}) : '';
+        updateDraftStatus(`已恢復此瀏覽器中的草稿${t ? `｜上次儲存 ${t}` : ''}`);
+      } catch (e) {
+        console.warn('restore draft failed', e);
+      }
+    }
+
+    function clearRecordDraft() {
+      localStorage.removeItem(RECORD_DRAFT_KEY);
+      updateDraftStatus('草稿已清除；目前表單內容仍保留，除非重新整理或自行清空。');
+      showToast('已清除已儲存的草稿。');
+    }
+
+    function escapeJsUrl(url) {
+      return String(url || '').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,'');
+    }
+
+    window.openCloudLink = function(url) {
+      if (!url) return;
+      try {
+        const u = new URL(url);
+        if (!/^https?:$/.test(u.protocol)) throw new Error('invalid');
+        window.open(u.href, '_blank', 'noopener,noreferrer');
+      } catch (_) { showToast('雲端連結格式不正確。'); }
+    };
 
     elements.recordForm.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -1743,13 +1807,15 @@
             type: elements.formType.value,
             title: elements.formTitle.value,
             summary: elements.formSummary.value || '',
-            tags: elements.formTags.value || '',
+            cloud_link: elements.formLink.value.trim() || '',
             parent_record_id: parentId,
             thread_id: threadId
           }
         });
         await applyPrivateBootstrap(googleIdToken);
         elements.recordForm.reset();
+        localStorage.removeItem(RECORD_DRAFT_KEY);
+        updateDraftStatus('正式紀錄已儲存，草稿已清除。');
         updateRelatedOptions();
         updatePreview();
         goSection('timeline');
@@ -1759,6 +1825,22 @@
 
     elements.addEditorBtn.addEventListener('click', () => {
       showToast('為避免誤授權，請直接到 Google Sheet 的 Editors 工作表新增或停用 Email。');
+    });
+
+    if (elements.saveDraftBtn) elements.saveDraftBtn.addEventListener('click', saveRecordDraft);
+    if (elements.clearDraftBtn) elements.clearDraftBtn.addEventListener('click', clearRecordDraft);
+    if (elements.recordUploadPdfBtn) elements.recordUploadPdfBtn.addEventListener('click', () => {
+      if (!elements.formRailway.value) { showToast('請先選擇鐵路，再上傳 PDF。'); return; }
+      if (elements.documentRailway) elements.documentRailway.value = elements.formRailway.value;
+      if (elements.docDate && elements.formDate.value) elements.docDate.value = elements.formDate.value;
+      if (elements.docTitle && elements.formTitle.value.trim()) elements.docTitle.value = elements.formTitle.value.trim();
+      goSection('documents');
+      renderDocuments();
+      setTimeout(() => {
+        elements.docFile?.scrollIntoView({behavior:'smooth', block:'center'});
+        elements.docFile?.focus();
+      }, 250);
+      showToast('已帶入鐵路、日期與標題；請選文件類型、權限與 PDF。');
     });
 
     [elements.railSearch, elements.typeFilter, elements.countryFilter].forEach(el => el.addEventListener('input', renderRailCards));
