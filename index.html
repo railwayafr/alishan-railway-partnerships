@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>阿里山林鐵｜國際鐵道交流合作歷程</title>
+  <title>阿里山林鐵｜國際鐵道交流合作歷程 系統</title>
   <style>
     :root {
       --forest: #1f5a4f;
@@ -739,11 +739,8 @@
     .visibility-public { background:#e6f3ec !important; color:#1f6a4f !important; }
     .visibility-internal { background:#fff1d8 !important; color:#8a5b12 !important; }
     .visibility-restricted { background:#f4e2de !important; color:#9f3f3d !important; }
-    .edit-only.locked { display:none !important; }
-    .admin-only { display:none !important; }
-    body.is-admin .admin-only { display:flex !important; }
-    .role-editor { background:#e8f1ee !important; color:#245e52 !important; }
-    .role-admin { background:#f4e2de !important; color:#8f3735 !important; }
+    .edit-only.locked { opacity:.48; pointer-events:none; filter:grayscale(.15); }
+    .hidden-role { display:none !important; }
     .access-note { margin-top:10px; font-size:.84rem; color:var(--muted); line-height:1.55; }
 
 </style>
@@ -761,11 +758,11 @@
       <nav class="nav" aria-label="主選單">
         <button class="nav-btn active" data-target="dashboard">總覽 <span>01</span></button>
         <button class="nav-btn" data-target="railways">鐵路列表 <span>02</span></button>
-        <button class="nav-btn" data-target="timeline">合作歷程<span>03</span></button>
-        <button class="nav-btn edit-only locked" data-target="new-record">新增紀錄 <span>04</span></button>
+        <button class="nav-btn" data-target="timeline">合作歷程 <span>03</span></button>
+        <button class="nav-btn editor-only hidden-role" data-target="new-record">新增紀錄 <span>04</span></button>
         <button class="nav-btn" data-target="documents">合作文件 <span>05</span></button>
-        <button class="nav-btn admin-only" data-target="export-report">匯出報告 <span>06</span></button>
-        <button class="nav-btn admin-only" data-target="editor-settings">編輯人名單 <span>07</span></button>
+        <button class="nav-btn admin-only hidden-role" data-target="editor-settings">編輯人名單 <span>06</span></button>
+        <button class="nav-btn admin-only hidden-role" data-target="export-report">匯出報告 <span>07</span></button>
       </nav>
     </aside>
 
@@ -781,14 +778,18 @@
             <button class="btn secondary" id="googleLoginBtn" type="button">使用 Google 帳號登入</button>
           </div>
           <button class="btn ghost edit-only locked" id="quickAddBtn">＋ 快速新增</button>
+          
         </div>
       </div>
 
       <section id="dashboard" class="content-section active">
         <div class="hero">
           <div>
-            <h3>讓合作歷程像搭火車一樣，好找、好看、好新增。</h3>
-            <p>整合阿里山林鐵與國際姊妹鐵路及友好鐵路的交流歷程、合作文件與後續進展，協助團隊快速查找、共同維護與延續合作脈絡。</p>
+            <h3>讓合作歷程清楚串聯、持續累積。</h3>
+            <p>集中管理阿里山林鐵與國際姊妹及友好鐵路之交流紀錄、合作脈絡與正式文件，支援多人協作、權限管理與報告匯出。</p>
+          </div>
+        </div>
+            </div>
           </div>
         </div>
 
@@ -820,7 +821,7 @@
               <option value="all">全部國家</option>
             </select>
           </div>
-          <button class="btn primary edit-only locked" data-go="new-record">＋ 新增一筆</button>
+          <button class="btn primary" data-go="new-record">＋ 新增一筆</button>
         </div>
         <div class="rail-grid" id="railGrid"></div>
       </section>
@@ -848,9 +849,7 @@
                 <option value="締結／協議">締結／協議</option>
               </select>
             </div>
-            <div class="hint-box">
-              可依鐵路、年份與交流性質快速縮小範圍；關聯紀錄可進一步查看同一合作事項的前後脈絡。
-            </div>
+            <div class="hint-box">可依鐵路、年份與交流性質快速篩選；關聯紀錄可協助追蹤同一合作事項的延續進展。</div>
           </div>
           <div>
             <div class="timeline-list" id="timelineList"></div>
@@ -884,7 +883,7 @@
           </div>
           <div class="form-card edit-only locked" id="documentEditPanel">
             <h3>新增合作文件</h3>
-            <p style="color:var(--muted);line-height:1.7;margin-top:-2px;">正式文件獨立管理，一條鐵路可收錄多份締結、續約、LOI、租借契約或其他正式文件。</p>
+            <p style="color:var(--muted);line-height:1.7;margin-top:-2px;">正式文件獨立管理，不混在一般交流紀錄裡。一條鐵路可以有多份締結、續約或租借契約。</p>
             <div class="field" style="margin-bottom:12px;">
               <label for="docType">文件類型</label>
               <select id="docType" class="select"><option>締結文件</option><option>續約文件</option><option>LOI／MOU</option><option>租借／正式合約</option><option>其他正式文件</option></select>
@@ -902,15 +901,17 @@
               <select id="docVisibility" class="select">
                 <option value="public">公開｜所有訪客可查看</option>
                 <option value="internal">內部｜Email 白名單登入後可查看</option>
-                <option value="restricted" class="admin-only-option">受限｜僅 Admin 可開啟檔案</option>
+                <option value="restricted">受限｜僅 Admin 可開啟</option>
               </select>
-              <small>Public：公開；Internal：Editor／Admin；Restricted：僅 Admin 可開啟。</small>
+              <small>租借正式契約建議使用「受限」；Restricted 僅 Admin 可上傳與開啟。</small>
             </div>
             <div class="field" style="margin-bottom:12px;">
-              <label for="docLink">PDF／雲端連結</label>
-              <input id="docLink" class="input" placeholder="Google Drive 或其他受控檔案連結">
+              <label for="docFile">PDF 文件<span class="required">＊</span></label>
+              <input id="docFile" class="input" type="file" accept="application/pdf,.pdf">
+              <small>目前單檔上限 8 MB。系統會自動存入「國家／鐵路」對應的私人 Google Drive 資料夾。</small>
             </div>
-            <button id="addDocumentBtn" class="btn primary" type="button">＋ 加入文件示意</button>
+            <button id="addDocumentBtn" class="btn primary" type="button">上傳並建立文件</button>
+            <div class="doc-upload-note" style="margin-top:16px;">Google Drive 根資料夾維持「受限」。公開、內部與受限文件皆由網站後端依權限提供下載，不直接公開私人 Drive 網址。</div>
           </div>
         </div>
       </section>
@@ -919,7 +920,7 @@
         <div class="form-shell">
           <div class="form-card edit-only locked" id="recordEditPanel">
             <h3>新增交流紀錄</h3>
-            <p style="color:var(--muted); line-height:1.7; margin-top:-2px;">先記錄核心資訊；摘要、標籤與附件可視需要補充。</p>
+            <p style="color:var(--muted); line-height:1.7; margin-top:-2px;">刻意把欄位壓到最少，避免變成繁雜文書作業。先把重要資訊記下來，之後再補附件或完整敘述。</p>
             <form id="recordForm">
               <div class="field-grid">
                 <div class="field">
@@ -994,44 +995,7 @@
             </div>
             <div class="hint-box" style="margin-top:18px;">
               <strong>正式版可以怎麼做？</strong><br>
-              送出後資料會寫入 Google Sheet，並同步更新鐵路頁與合作歷程。
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="export-report" class="content-section">
-        <div class="form-shell">
-          <div class="form-card">
-            <h3>匯出報告</h3>
-            <p style="color:var(--muted); line-height:1.7; margin-top:-2px;">此功能僅限 Admin。可先設定資料範圍；後端會再次驗證 Admin 權限，不會只依賴前端按鈕是否顯示。</p>
-            <div class="field-grid">
-              <div class="field">
-                <label for="exportDateFrom">起始日期</label>
-                <input id="exportDateFrom" type="date" class="input">
-              </div>
-              <div class="field">
-                <label for="exportDateTo">結束日期</label>
-                <input id="exportDateTo" type="date" class="input">
-              </div>
-              <div class="field full">
-                <label for="exportRailway">鐵路範圍</label>
-                <select id="exportRailway" class="select"><option value="all">全部鐵路</option></select>
-              </div>
-              <div class="field full">
-                <label>輸出格式</label>
-                <div class="hint-box">正式附錄年表｜國家、鐵路、締結日期、交流時間、交流性質、脈絡紀錄</div>
-              </div>
-            </div>
-            <button id="exportReportBtn" class="btn primary" type="button">建立 Word 報告</button>
-            <div class="access-note">v6 已完成 Admin-only 權限驗證與匯出資料篩選；Word 版面生成會在下一階段接上。</div>
-          </div>
-          <div class="preview-card">
-            <h3>權限說明</h3>
-            <div class="hint-box">
-              <strong>Public</strong>｜僅公開瀏覽<br><br>
-              <strong>Editor</strong>｜新增／維護紀錄、查看 Internal 文件<br><br>
-              <strong>Admin</strong>｜Editor 權限＋Restricted 文件＋匯出報告＋編輯人名單
+              送出後資料可寫入 Google Sheet，並同步更新鐵路頁、時間軸頁與年度匯出頁。若要更進一步，也可加上「需追蹤」勾選與寄送提醒功能。
             </div>
           </div>
         </div>
@@ -1041,10 +1005,10 @@
         <div class="panel-grid">
           <div class="panel">
             <h3>編輯人名單</h3>
-            <p style="color:var(--muted); line-height:1.7;">只有 active = TRUE 且 Email 符合白名單的帳號可進入編輯模式；role 可設為 editor 或 admin。</p>
+            <p style="color:var(--muted); line-height:1.7;">正式版改為 Google Email 白名單。只有 active = TRUE 且 Email 符合的帳號才能進入編輯模式；停用後仍保留舊紀錄的編輯來源。</p>
             <div class="field-grid" style="margin-top:18px;">
               <div class="field">
-                <label for="newEditorName">新增姓名／Email</label>
+                <label for="newEditorName">新增姓名／Email（系統）</label>
                 <input id="newEditorName" class="input" placeholder="例如：王小明｜name@example.com">
               </div>
               <div class="field" style="display:flex; align-items:end;">
@@ -1056,8 +1020,8 @@
           <div class="panel">
             <h3>正式版建議</h3>
             <div class="hint-box">
-              <strong>GitHub ：</strong><br>目前已改為 Google Sheet 的 Editors 工作表作為 Email 白名單來源。<br><br>
-              <strong>正式共編版：</strong><br>管理者直接在 Google Sheet 的 <code>Editors</code> 工作表新增姓名、Email 或切換 active。網站登入後會由後端驗證 Email，不由前端自行信任使用者輸入。
+              <strong>權限管理：</strong><br>目前已改為 Google Sheet 的 Editors 工作表作為 Email 白名單來源。<br><br>
+              <strong>名單維護：</strong><br>管理者直接在 Google Sheet 的 <code>Editors</code> 工作表新增姓名、Email 或切換 active。網站登入後會由後端驗證 Email，不由前端自行信任使用者輸入。
             </div>
             <div class="hint-box" style="margin-top:14px;">
               <strong>建議欄位：</strong><br>姓名｜Email｜是否啟用｜備註<br><br>舊同事建議改成「停用」，不要刪除，以免歷史紀錄失去編輯來源。
@@ -1065,6 +1029,26 @@
           </div>
         </div>
       </section>
+      <section id="export-report" class="content-section">
+        <div class="form-shell">
+          <div class="form-card admin-only hidden-role">
+            <h3>匯出 Word 年表</h3>
+            <p style="color:var(--muted);line-height:1.7;">僅 Admin 可使用。輸出格式依「國家、鐵路、締結日期、交流時間、交流性質、脈絡紀錄」整理為可編輯 .docx。</p>
+            <div class="field-grid">
+              <div class="field"><label for="exportFrom">起始日期</label><input id="exportFrom" type="date" class="input"></div>
+              <div class="field"><label for="exportTo">結束日期</label><input id="exportTo" type="date" class="input"></div>
+              <div class="field full"><label for="exportRailway">鐵路</label><select id="exportRailway" class="select"></select></div>
+            </div>
+            <button id="downloadWordBtn" class="btn primary" type="button">產生並下載 Word</button>
+            <div class="access-note">Word 由 Apps Script 後端產生，會再次驗證 Admin 權限；一般訪客與 Editor 無法呼叫匯出。</div>
+          </div>
+          <div class="preview-card">
+            <h3>輸出內容</h3>
+            <div class="hint-box">預設匯出符合條件的交流紀錄，不包含 Internal／Restricted PDF 檔案本身。正式文件仍留在文件庫中，不會被打包進 Word。</div>
+          </div>
+        </div>
+      </section>
+
     </main>
   </div>
 
@@ -1077,8 +1061,6 @@
     const GOOGLE_CLIENT_ID = '72811054895-rjo9nd6rmj5i42jqa30ule6afrjfr3u0.apps.googleusercontent.com';
 
     let isAuthorizedEditor = false;
-    let isAdmin = false;
-    let currentRole = 'public';
     let googleIdToken = '';
     let currentUser = null;
     let editors = [];
@@ -1088,28 +1070,21 @@
 
     const COUNTRY_FLAGS = { '日本':'🇯🇵','印度':'🇮🇳','瑞士':'🇨🇭','英國':'🇬🇧','斯洛伐克':'🇸🇰','澳洲':'🇦🇺','臺灣':'🇹🇼' };
 
-    function setAccessMode(role, label) {
-      currentRole = role || 'public';
-      isAuthorizedEditor = currentRole === 'editor' || currentRole === 'admin';
-      isAdmin = currentRole === 'admin';
-      document.body.classList.toggle('is-admin', isAdmin);
-      document.querySelectorAll('.edit-only').forEach(el => el.classList.toggle('locked', !isAuthorizedEditor));
+    function setEditMode(authorized, label) {
+      isAuthorizedEditor = authorized;
+      document.querySelectorAll('.edit-only').forEach(el => el.classList.toggle('locked', !authorized));
+      const role = currentUser?.role || 'public';
+      document.querySelectorAll('.editor-only').forEach(el => el.classList.toggle('hidden-role', !(role === 'editor' || role === 'admin')));
+      document.querySelectorAll('.admin-only').forEach(el => el.classList.toggle('hidden-role', role !== 'admin'));
       const status = document.getElementById('authStatus');
       if (status) {
-        status.textContent = isAuthorizedEditor ? (label || (isAdmin ? 'Admin｜已授權' : 'Editor｜已授權')) : '公開瀏覽模式';
-        status.classList.toggle('authorized', isAuthorizedEditor);
+        status.textContent = authorized ? (label || '已授權編輯') : '公開瀏覽模式';
+        status.classList.toggle('authorized', authorized);
       }
       const loginBtn = document.getElementById('googleLoginBtn');
       if (loginBtn) {
         if (!GOOGLE_CLIENT_ID) loginBtn.textContent = 'Google 登入待設定';
-        else loginBtn.textContent = isAuthorizedEditor ? '登出編輯模式' : '使用 Google 帳號登入';
-      }
-      const restrictedOption = document.querySelector('#docVisibility option[value="restricted"]');
-      if (restrictedOption) restrictedOption.disabled = !isAdmin;
-      if (!isAdmin && document.getElementById('docVisibility')?.value === 'restricted') document.getElementById('docVisibility').value = 'internal';
-      const activeSection = document.querySelector('.content-section.active')?.id || 'dashboard';
-      if ((!isAuthorizedEditor && activeSection === 'new-record') || (!isAdmin && ['export-report','editor-settings'].includes(activeSection))) {
-        if (typeof goSection === 'function') goSection('dashboard');
+        else loginBtn.textContent = authorized ? '登出編輯模式' : '使用 Google 帳號登入';
       }
     }
 
@@ -1151,7 +1126,9 @@
         type: d.document_type,
         title: d.title,
         date: String(d.document_date || '').slice(0,10),
-        file: d.file_url || '',
+        file: '',
+        fileName: d.file_name || '',
+        fileSize: Number(d.file_size || 0),
         editor: d.editor_name || d.editor_email || '',
         visibility: String(d.visibility || 'public').toLowerCase(),
         note: d.note || ''
@@ -1197,11 +1174,11 @@
       const result = await apiPost({ action:'authBootstrap', idToken });
       const data = result.data || {};
       currentUser = result.user || data.currentUser || null;
-      editors = (data.editors || []).map(e => ({ name:e.name, email:e.email, active:true, role:(e.role || 'editor').toLowerCase() }));
+      editors = (data.editors || []).map(e => ({ name:e.name, email:e.email, active:true, role:(e.role||'editor') }));
       railwayData = (data.railways || []).map(mapRailway);
       records = (data.records || []).map(mapRecord);
       cooperationDocuments = (data.documents || []).map(mapDocument);
-      setAccessMode(currentUser?.role || 'editor', `${currentUser?.name || currentUser?.email || '授權使用者'}｜${(currentUser?.role || 'editor') === 'admin' ? 'Admin' : 'Editor'}`);
+      setEditMode(true, `${currentUser?.name || currentUser?.email || '授權使用者'}｜${currentUser?.role === 'admin' ? 'Admin' : 'Editor'}`);
       refreshAllUI(false);
     }
 
@@ -1209,7 +1186,7 @@
       const btn = document.getElementById('googleLoginBtn');
       if (!GOOGLE_CLIENT_ID) {
         if (btn) btn.title = '請先建立 Google OAuth Client ID，並填入 index.html 的 GOOGLE_CLIENT_ID。';
-        setAccessMode('public');
+        setEditMode(false);
         return;
       }
       if (!window.google?.accounts?.id) {
@@ -1222,11 +1199,11 @@
           try {
             googleIdToken = response.credential;
             await applyPrivateBootstrap(googleIdToken);
-            showToast(`登入成功：${currentUser?.role === 'admin' ? 'Admin' : 'Editor'} 權限。`);
+            showToast('Google Email 白名單驗證成功，已進入編輯模式。');
           } catch (err) {
             googleIdToken = '';
             currentUser = null;
-            setAccessMode('public');
+            setEditMode(false);
             showToast(err.message || '此帳號沒有編輯權限。');
           }
         }
@@ -1254,13 +1231,13 @@
         title: '新增紀錄',
         desc: '先快速記下核心資訊，後續再補充完整附件或紀錄內容。'
       },
-      'export-report': {
-        title: '匯出報告',
-        desc: '僅限 Admin，可依日期與鐵路範圍準備正式年表輸出。'
-      },
       'editor-settings': {
         title: '編輯人名單',
-        desc: '僅限 Admin；透過 Google Sheet 的 Editors 工作表維護 Email 白名單與角色。'
+        desc: '由 Admin 維護 Google Email 白名單與角色權限。'
+      },
+      'export-report': {
+        title: '匯出報告',
+        desc: 'Admin 可依日期與鐵路範圍產生可編輯 Word 年表。'
       }
     };
 
@@ -1299,10 +1276,6 @@
       quickAddBtn: document.getElementById('quickAddBtn'),
       fillSampleBtn: document.getElementById('fillSampleBtn'),
       editorList: document.getElementById('editorList'),
-      exportDateFrom: document.getElementById('exportDateFrom'),
-      exportDateTo: document.getElementById('exportDateTo'),
-      exportRailway: document.getElementById('exportRailway'),
-      exportReportBtn: document.getElementById('exportReportBtn'),
       newEditorName: document.getElementById('newEditorName'),
       addEditorBtn: document.getElementById('addEditorBtn'),
       documentRailway: document.getElementById('documentRailway'),
@@ -1313,7 +1286,11 @@
       docTitle: document.getElementById('docTitle'),
       docDate: document.getElementById('docDate'),
       docEditor: document.getElementById('docEditor'),
-      docLink: document.getElementById('docLink'),
+      docFile: document.getElementById('docFile'),
+      exportFrom: document.getElementById('exportFrom'),
+      exportTo: document.getElementById('exportTo'),
+      exportRailway: document.getElementById('exportRailway'),
+      downloadWordBtn: document.getElementById('downloadWordBtn'),
       docVisibility: document.getElementById('docVisibility'),
       addDocumentBtn: document.getElementById('addDocumentBtn')
     };
@@ -1369,14 +1346,14 @@
 
     function renderEditorList() {
       if (!elements.editorList) return;
-      if (!isAdmin) {
-        elements.editorList.innerHTML = '<div class="empty">此區僅限 Admin。</div>';
+      if (!isAuthorizedEditor) {
+        elements.editorList.innerHTML = '<div class="empty">登入授權帳號後可查看目前啟用的編輯者；名單請直接在 Google Sheet 的 Editors 工作表維護。</div>';
         return;
       }
       elements.editorList.innerHTML = editors.map(e => `
         <div class="simple-item">
           <div><strong>${e.name || e.email}</strong><span>${e.email}</span></div>
-          <span class="badge role-${e.role === 'admin' ? 'admin' : 'editor'}">${e.role === 'admin' ? 'Admin' : 'Editor'}</span>
+          <span class="badge">${e.role === 'admin' ? 'Admin' : 'Editor'}</span>
         </div>
       `).join('') || '<div class="empty">Editors 工作表目前沒有啟用中的名單。</div>';
     }
@@ -1385,6 +1362,7 @@
       elements.countryFilter.innerHTML = '<option value="all">全部國家</option>';
       elements.timelineRailway.innerHTML = '';
       elements.formRailway.innerHTML = '';
+      if (elements.exportRailway) elements.exportRailway.innerHTML = '';
       elements.timelineYear.innerHTML = '';
       const countries = [...new Set(railwayData.map(r => r.country))];
       countries.forEach(country => {
@@ -1521,7 +1499,8 @@
       const railway = getRailway(railwayId);
       const docs = cooperationDocuments.filter(d => {
         const vis = d.visibility || 'public';
-        return d.railwayId === railwayId && (type === 'all' || d.type === type) && (visibilityFilter === 'all' || vis === visibilityFilter);
+        const allowedByVisibility = vis === 'public' || isAuthorizedEditor || vis === 'restricted';
+        return d.railwayId === railwayId && (type === 'all' || d.type === type) && (visibilityFilter === 'all' || vis === visibilityFilter) && allowedByVisibility;
       }).sort((a,b)=>b.date.localeCompare(a.date));
       if (!docs.length) {
         elements.documentGrid.innerHTML = `<div class="empty" style="grid-column:1/-1;">${railway ? railway.name : '此鐵路'}目前尚未建立合作文件。<br><span style="font-size:.9rem;">可在右側新增締結、續約、合約或其他正式文件。</span></div>`;
@@ -1542,16 +1521,10 @@
           </div>
           <p style="margin-top:12px;">${d.file || 'PDF／雲端文件'}</p>
           <div class="doc-actions">
-            ${d.file ? `<button class="text-btn" onclick="openDocument('${d.id}')">開啟文件</button>` : `<button class="text-btn" onclick="showToast('${d.visibility === 'restricted' ? '此受限文件僅限 Admin 開啟。' : '目前沒有可開啟的檔案連結。'}')">${d.visibility === 'restricted' ? '受限文件' : '無檔案連結'}</button>`}
-            ${isAuthorizedEditor ? '<button class="text-btn" onclick="showToast(\'文件編輯功能將於後續版本加入。\')">編輯資訊</button>' : ''}
+            ${canDownloadDocument(d) ? `<button class="text-btn" onclick="downloadDocumentById('${d.id}')">開啟 PDF</button>` : `<button class="text-btn" onclick="showToast('此文件目前沒有可用的查看權限。')">${d.visibility==='restricted' ? '受限文件' : '無權限'}</button>`}
+            ${isAuthorizedEditor ? '<button class="text-btn" onclick="showToast(\'系統 示意：可更新文件名稱、類型、日期或替換檔案連結。\')">編輯資訊</button>' : ''}
           </div>
         </article>`).join('');
-    }
-
-    window.openDocument = function(id) {
-      const d = cooperationDocuments.find(x => x.id === id);
-      if (!d || !d.file) { showToast('目前沒有可開啟的檔案連結，或你的權限不足。'); return; }
-      window.open(d.file, '_blank', 'noopener,noreferrer');
     }
 
     window.focusDocuments = function(id) {
@@ -1656,8 +1629,8 @@
             </div>
             ${rec.editor ? `<div style="margin-top:12px; color:var(--muted); font-size:.82rem;">最後編輯：${rec.editor}${rec.updatedAt ? ` · ${rec.updatedAt}` : ''}</div>` : ''}
             <div class="record-actions">
-              <button class="text-btn" onclick="showToast('完整紀錄頁可於後續版本加入。')">查看全文</button>
-              <button class="text-btn" onclick="showToast('紀錄編輯功能可於後續版本加入。')">補充內容</button>
+              <button class="text-btn" onclick="showToast('完整紀錄頁可於後續版本擴充。')">查看全文</button>
+              <button class="text-btn" onclick="showToast('編輯既有紀錄可於後續版本擴充。')">補充內容</button>
             </div>
           </article>
         `;
@@ -1799,39 +1772,94 @@
     if (elements.addDocumentBtn) elements.addDocumentBtn.addEventListener('click', async () => {
       if (!isAuthorizedEditor || !googleIdToken) { showToast('請先使用白名單 Google 帳號登入。'); return; }
       if (!elements.docTitle.value.trim()) { showToast('請先輸入文件名稱。'); return; }
-      if (!elements.docLink.value.trim()) { showToast('請先貼上 Google Drive / PDF 連結。'); return; }
+      const file = elements.docFile?.files?.[0];
+      if (!file) { showToast('請先選擇 PDF 檔案。'); return; }
+      if (file.type !== 'application/pdf' && !/\.pdf$/i.test(file.name)) { showToast('目前僅支援 PDF。'); return; }
+      if (file.size > 8 * 1024 * 1024) { showToast('PDF 超過 8 MB，請先壓縮後再上傳。'); return; }
+      if (elements.docVisibility?.value === 'restricted' && currentUser?.role !== 'admin') { showToast('Restricted 文件僅限 Admin 上傳。'); return; }
       try {
+        elements.addDocumentBtn.disabled = true;
+        elements.addDocumentBtn.textContent = '上傳中…';
+        const base64 = await fileToBase64(file);
         await apiPost({
-          action:'createDocument', idToken:googleIdToken,
+          action:'uploadDocument', idToken:googleIdToken,
           data:{
             railway_id:elements.documentRailway.value,
             document_type:elements.docType.value,
             title:elements.docTitle.value.trim(),
             document_date:elements.docDate.value || '',
-            file_url:elements.docLink.value.trim(),
             visibility:elements.docVisibility ? elements.docVisibility.value : 'public',
+            file_name:file.name,
+            mime_type:file.type || 'application/pdf',
+            file_base64:base64,
             note:''
           }
         });
         await applyPrivateBootstrap(googleIdToken);
-        elements.docTitle.value=''; elements.docDate.value=''; elements.docLink.value='';
+        elements.docTitle.value=''; elements.docDate.value=''; elements.docFile.value='';
         renderDocuments(); renderRailCards();
-        showToast('合作文件已寫入 Google Sheet。');
-      } catch (err) { showToast('新增文件失敗：' + err.message); }
+        showToast('PDF 已上傳至 Google Drive 並建立文件紀錄。');
+      } catch (err) { showToast('上傳失敗：' + err.message); }
+      finally { elements.addDocumentBtn.disabled=false; elements.addDocumentBtn.textContent='上傳並建立文件'; }
     });
 
 
+    function fileToBase64(file) {
+      return new Promise((resolve,reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result).split(',')[1] || '');
+        reader.onerror = () => reject(new Error('讀取 PDF 失敗'));
+        reader.readAsDataURL(file);
+      });
+    }
 
+    function base64ToBlob(base64, mimeType) {
+      const bytes = atob(base64); const arr = new Uint8Array(bytes.length);
+      for (let i=0;i<bytes.length;i++) arr[i]=bytes.charCodeAt(i);
+      return new Blob([arr], {type:mimeType || 'application/octet-stream'});
+    }
 
-    if (elements.exportReportBtn) elements.exportReportBtn.addEventListener('click', async () => {
-      if (!isAdmin || !googleIdToken) { showToast('匯出報告僅限 Admin。'); return; }
+    function triggerBlobDownload(blob, filename) {
+      const url=URL.createObjectURL(blob); const a=document.createElement('a');
+      a.href=url; a.download=filename || 'download'; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),1500);
+    }
+
+    function canDownloadDocument(d) {
+      if (d.visibility === 'public') return true;
+      if (d.visibility === 'internal') return currentUser?.role === 'editor' || currentUser?.role === 'admin';
+      if (d.visibility === 'restricted') return currentUser?.role === 'admin';
+      return false;
+    }
+
+    window.downloadDocumentById = async function(documentId) {
       try {
-        const result = await apiPost({
-          action:'exportReport', idToken:googleIdToken,
-          data:{ railway_id:elements.exportRailway?.value || 'all', date_from:elements.exportDateFrom?.value || '', date_to:elements.exportDateTo?.value || '' }
-        });
-        showToast(`${result.data?.message || '權限驗證成功'} 共 ${result.data?.count ?? 0} 筆紀錄。`);
-      } catch (err) { showToast('匯出準備失敗：' + err.message); }
+        const result = await apiPost({action:'downloadDocument', document_id:documentId, idToken:googleIdToken || ''});
+        const data=result.data || {};
+        triggerBlobDownload(base64ToBlob(data.base64, data.mime_type), data.file_name || 'document.pdf');
+      } catch(err) { showToast('文件下載失敗：'+err.message); }
+    }
+
+    function populateExportRailways() {
+      if (!elements.exportRailway) return;
+      elements.exportRailway.innerHTML = '<option value="all">全部鐵路</option>';
+      ['姊妹鐵路','友好／交流鐵路'].forEach(category => {
+        const group=document.createElement('optgroup'); group.label=category;
+        railwayData.filter(r=>r.type===category).forEach(r=>{const o=document.createElement('option');o.value=r.id;o.textContent=`${r.flag} ${r.name}`;group.appendChild(o);});
+        if(group.children.length) elements.exportRailway.appendChild(group);
+      });
+    }
+
+    if (elements.downloadWordBtn) elements.downloadWordBtn.addEventListener('click', async () => {
+      if (currentUser?.role !== 'admin' || !googleIdToken) { showToast('Word 匯出僅限 Admin。'); return; }
+      try {
+        elements.downloadWordBtn.disabled=true; elements.downloadWordBtn.textContent='產生 Word 中…';
+        const result=await apiPost({action:'exportReport',idToken:googleIdToken,data:{date_from:elements.exportFrom?.value||'',date_to:elements.exportTo?.value||'',railway_id:elements.exportRailway?.value||'all'}});
+        const data=result.data||{};
+        triggerBlobDownload(base64ToBlob(data.base64,data.mime_type),data.file_name||'國際鐵道交流合作歷程.docx');
+        showToast(`已產生 ${data.count || 0} 筆紀錄的 Word。`);
+      } catch(err) { showToast('Word 匯出失敗：'+err.message); }
+      finally { elements.downloadWordBtn.disabled=false; elements.downloadWordBtn.textContent='產生並下載 Word'; }
     });
 
     const googleLoginBtn = document.getElementById('googleLoginBtn');
@@ -1841,7 +1869,7 @@
         currentUser = null;
         editors = [];
         if (window.google?.accounts?.id) google.accounts.id.disableAutoSelect();
-        setAccessMode('public');
+        setEditMode(false);
         await loadPublicData();
         showToast('已登出編輯模式。');
         return;
@@ -1861,27 +1889,15 @@
       });
     });
 
-    function populateExportRailways() {
-      if (!elements.exportRailway) return;
-      const current = elements.exportRailway.value || 'all';
-      elements.exportRailway.innerHTML = '<option value="all">全部鐵路</option>';
-      ['姊妹鐵路','友好／交流鐵路'].forEach(groupName => {
-        const group = document.createElement('optgroup'); group.label = groupName;
-        railwayData.filter(r => r.type === groupName).forEach(r => { const op=document.createElement('option'); op.value=r.id; op.textContent=`${r.flag} ${r.name}`; group.appendChild(op); });
-        elements.exportRailway.appendChild(group);
-      });
-      if ([...elements.exportRailway.options].some(o=>o.value===current)) elements.exportRailway.value=current;
-    }
-
     function refreshAllUI(rebuildFilters=false) {
       if (rebuildFilters) populateFilters();
       renderEditorOptions();
-      populateExportRailways();
       renderEditorList();
       renderStats();
       renderCountrySummary();
       renderTopics();
       populateDocumentRailways();
+      populateExportRailways();
       renderDocumentEditorOptions();
       renderRailCards();
       renderTimeline();
@@ -1890,7 +1906,7 @@
       updatePreview();
     }
 
-    setAccessMode('public');
+    setEditMode(false);
     initializeGoogleIdentity();
     loadPublicData();
   </script>
